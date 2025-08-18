@@ -860,6 +860,53 @@
     let editedScheduleData = [];
     let currentEditDate = null;
 
+    // Load saved data on page load
+    function loadSavedData() {
+        try {
+            const savedEdits = localStorage.getItem('perfusionScheduleEdits');
+            const savedPublished = localStorage.getItem('perfusionPublishedSchedule');
+            
+            if (savedEdits) {
+                editedScheduleData = JSON.parse(savedEdits);
+                console.log('Loaded saved edits from localStorage');
+            }
+            
+            // Check if we have published data
+            if (savedPublished) {
+                const publishedData = JSON.parse(savedPublished);
+                console.log('Found published schedule data');
+                return publishedData;
+            }
+        } catch (error) {
+            console.error('Error loading saved data:', error);
+        }
+        return null;
+    }
+
+    // Save edits to localStorage
+    function saveEditsToStorage() {
+        try {
+            localStorage.setItem('perfusionScheduleEdits', JSON.stringify(editedScheduleData));
+            console.log('Saved edits to localStorage');
+        } catch (error) {
+            console.error('Error saving edits:', error);
+        }
+    }
+
+    // Save published schedule to localStorage
+    function savePublishedToStorage() {
+        try {
+            const publishedData = {
+                schedule: editedScheduleData,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('perfusionPublishedSchedule', JSON.stringify(publishedData));
+            console.log('Saved published schedule to localStorage');
+        } catch (error) {
+            console.error('Error saving published schedule:', error);
+        }
+    }
+
     // Page Navigation
     function showPage(pageId) {
         const pages = document.querySelectorAll('.page');
@@ -1107,8 +1154,56 @@
     function initializePublishedCalendar() {
         const calendarEl = document.getElementById('publishedCalendar');
         
-        // If no edited data exists, fetch original data
-        if (editedScheduleData.length === 0) {
+        // Check for saved published data first
+        const savedPublishedData = loadSavedData();
+        
+        if (savedPublishedData && savedPublishedData.schedule) {
+            // Use saved published data
+            const events = createEventsFromData(savedPublishedData.schedule);
+            
+            publishedCalendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
+                },
+                showNonCurrentDates: false,
+                fixedWeekCount: false,
+                events: events,
+                eventContent: function(arg) {
+                    return { html: arg.event.title };
+                }
+            });
+
+            publishedCalendar.render();
+            
+            // Update last updated time
+            const lastUpdated = new Date(savedPublishedData.timestamp).toLocaleString();
+            document.getElementById('lastUpdated').textContent = `Last updated: ${lastUpdated}`;
+            
+        } else if (editedScheduleData.length > 0) {
+            // Use edited data if it exists
+            const events = createEventsFromData(editedScheduleData);
+
+            publishedCalendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
+                },
+                showNonCurrentDates: false,
+                fixedWeekCount: false,
+                events: events,
+                eventContent: function(arg) {
+                    return { html: arg.event.title };
+                }
+            });
+
+            publishedCalendar.render();
+        } else {
+            // Fetch original data if no saved data exists
             fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
                 .then(response => {
                     if (!response.ok) {
@@ -1141,26 +1236,6 @@
                     console.error('Error fetching data: ', error);
                     calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
                 });
-        } else {
-            // Use edited data if it exists
-            const events = createEventsFromData(editedScheduleData);
-
-            publishedCalendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
-                },
-                showNonCurrentDates: false,
-                fixedWeekCount: false,
-                events: events,
-                eventContent: function(arg) {
-                    return { html: arg.event.title };
-                }
-            });
-
-            publishedCalendar.render();
         }
     }
 
@@ -1329,6 +1404,9 @@
         supervisorEditCalendar.destroy();
         initializeSupervisorEditCalendarFromData();
         
+        // Save edits automatically
+        saveEditsToStorage();
+        
         closeEditModal();
     }
 
@@ -1366,11 +1444,14 @@
             publishedCalendar.destroy();
             initializePublishedCalendarFromData();
             
+            // Save to localStorage
+            savePublishedToStorage();
+            
             const now = new Date();
             document.getElementById('lastUpdated').textContent = `Last updated: ${now.toLocaleString()}`;
         }
         
-        alert('Schedule published successfully!');
+        alert('Schedule published successfully and saved!');
     }
 
     function initializePublishedCalendarFromData() {
