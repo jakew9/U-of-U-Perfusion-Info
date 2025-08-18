@@ -860,32 +860,91 @@
     let editedScheduleData = [];
     let currentEditDate = null;
 
-    // Load saved data on page load and set editedScheduleData properly
-    function loadSavedData() {
+    // Versioned data storage system
+    function getStorageKey(date = new Date()) {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        return `perfusionSchedule_${year}_${month}`;
+    }
+
+    function getCurrentMonthKey() {
+        // Get the key for the currently displayed month
+        const calendarApi = publishedCalendar || supervisorEditCalendar;
+        if (calendarApi) {
+            const currentDate = calendarApi.getDate();
+            return getStorageKey(currentDate);
+        }
+        return getStorageKey(); // Fall back to current month
+    }
+
+    // Load saved data for specific month/year
+    function loadSavedDataForMonth(monthKey = null) {
         try {
-            const savedPublished = localStorage.getItem('perfusionPublishedSchedule');
-            const savedEdits = localStorage.getItem('perfusionScheduleEdits');
+            const key = monthKey || getCurrentMonthKey();
+            const savedData = localStorage.getItem(key);
             
-            // Load published data first (highest priority)
-            if (savedPublished) {
-                const publishedData = JSON.parse(savedPublished);
-                console.log('Found published schedule data with', publishedData.schedule?.length || 0, 'rows');
-                // Also update editedScheduleData to the published schedule
-                if (publishedData.schedule) {
-                    editedScheduleData = JSON.parse(JSON.stringify(publishedData.schedule));
-                }
-                return publishedData;
-            }
-            
-            // Fall back to saved edits if no published data
-            if (savedEdits) {
-                const editsData = JSON.parse(savedEdits);
-                editedScheduleData = JSON.parse(JSON.stringify(editsData));
-                console.log('Loaded saved edits from localStorage with', editsData.length, 'rows');
-                return { schedule: editsData, timestamp: new Date().toISOString() };
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                console.log(`Found saved schedule for ${key}:`, parsedData.versions?.length || 0, 'versions');
+                return parsedData;
             }
         } catch (error) {
             console.error('Error loading saved data:', error);
+        }
+        return null;
+    }
+
+    // Save versioned schedule data
+    function saveVersionedSchedule(scheduleData, monthKey = null) {
+        try {
+            const key = monthKey || getCurrentMonthKey();
+            const existingData = loadSavedDataForMonth(key) || { versions: [] };
+            
+            // Create new version
+            const newVersion = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                schedule: JSON.parse(JSON.stringify(scheduleData)),
+                publishedBy: 'Supervisor' // Could be expanded later
+            };
+            
+            // Add to versions array (newest first)
+            existingData.versions.unshift(newVersion);
+            
+            // Keep only last 10 versions to prevent storage bloat
+            if (existingData.versions.length > 10) {
+                existingData.versions = existingData.versions.slice(0, 10);
+            }
+            
+            // Set current version
+            existingData.currentVersion = newVersion;
+            existingData.lastUpdated = newVersion.timestamp;
+            
+            localStorage.setItem(key, JSON.stringify(existingData));
+            console.log(`Saved new version for ${key}. Total versions:`, existingData.versions.length);
+            
+            return newVersion;
+        } catch (error) {
+            console.error('Error saving versioned schedule:', error);
+        }
+        return null;
+    }
+
+    // Get the latest published version for a month
+    function getLatestPublishedVersion(monthKey = null) {
+        const data = loadSavedDataForMonth(monthKey);
+        return data?.currentVersion || null;
+    }
+
+    // Legacy function for backward compatibility
+    function loadSavedData() {
+        const latestVersion = getLatestPublishedVersion();
+        if (latestVersion) {
+            editedScheduleData = JSON.parse(JSON.stringify(latestVersion.schedule));
+            return {
+                schedule: latestVersion.schedule,
+                timestamp: latestVersion.timestamp
+            };
         }
         return null;
     }
@@ -925,12 +984,7 @@
             initializeCalendar();
         } else if (pageId === 'supervisorViewPage' && !supervisorViewCalendar) {
             initializeSupervisorViewCalendar();
-        } else if (pageId === 'supervisorEditPage') {
-            // Always refresh the edit calendar to show latest published state
-            if (supervisorEditCalendar) {
-                supervisorEditCalendar.destroy();
-                supervisorEditCalendar = null;
-            }
+        } else if (pageId === 'supervisorEditPage' && !supervisorEditCalendar) {
             initializeSupervisorEditCalendar();
         } else if (pageId === 'publishedSchedulePage' && !publishedCalendar) {
             initializePublishedCalendar();
@@ -1166,12 +1220,12 @@
     function initializePublishedCalendar() {
         const calendarEl = document.getElementById('publishedCalendar');
         
-        // Check for saved published data first
-        const savedPublishedData = loadSavedData();
+        // Check for latest published version first
+        const latestVersion = getLatestPublishedVersion();
         
-        if (savedPublishedData && savedPublishedData.schedule) {
-            // Use saved published data
-            const events = createEventsFromData(savedPublishedData.schedule);
+        if (latestVersion && latestVersion.schedule) {
+            // Use the latest published version
+            const events = createEventsFromData(latestVersion.schedule);
             
             publishedCalendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
@@ -1191,31 +1245,11 @@
             publishedCalendar.render();
             
             // Update last updated time
-            const lastUpdated = new Date(savedPublishedData.timestamp).toLocaleString();
+            const lastUpdated = new Date(latestVersion.timestamp).toLocaleString();
             document.getElementById('lastUpdated').textContent = `Last updated: ${lastUpdated}`;
             
-        } else if (editedScheduleData.length > 0) {
-            // Use edited data if it exists
-            const events = createEventsFromData(editedScheduleData);
-
-            publishedCalendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
-                },
-                showNonCurrentDates: false,
-                fixedWeekCount: false,
-                events: events,
-                eventContent: function(arg) {
-                    return { html: arg.event.title };
-                }
-            });
-
-            publishedCalendar.render();
         } else {
-            // Fetch original data if no saved data exists
+            // Fetch original data if no published version exists
             fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
                 .then(response => {
                     if (!response.ok) {
@@ -1243,6 +1277,7 @@
                     });
 
                     publishedCalendar.render();
+                    document.getElementById('lastUpdated').textContent = 'Showing original schedule (no published versions)';
                 })
                 .catch(error => {
                     console.error('Error fetching data: ', error);
@@ -1416,24 +1451,13 @@
         supervisorEditCalendar.destroy();
         initializeSupervisorEditCalendarFromData();
         
-        // Save edits automatically
-        saveEditsToStorage();
+        // No longer auto-save edits - only save when published
         
         closeEditModal();
     }
 
     function initializeSupervisorEditCalendarFromData() {
         const calendarEl = document.getElementById('supervisorEditCalendar');
-        
-        // Always load the latest published data before creating the calendar
-        const savedPublishedData = loadSavedData();
-        
-        if (savedPublishedData && savedPublishedData.schedule) {
-            // Use the published schedule as the starting point
-            editedScheduleData = JSON.parse(JSON.stringify(savedPublishedData.schedule));
-            console.log('Refreshing edit calendar with published data:', editedScheduleData.length, 'rows');
-        }
-        
         const events = createEditableEvents(editedScheduleData);
 
         supervisorEditCalendar = new FullCalendar.Calendar(calendarEl, {
@@ -1462,18 +1486,22 @@
 
     function publishSchedule() {
         if (publishedCalendar) {
-            // Destroy and recreate to avoid stacking
-            publishedCalendar.destroy();
-            initializePublishedCalendarFromData();
+            // Save as new version for the current month
+            const newVersion = saveVersionedSchedule(editedScheduleData);
             
-            // Save to localStorage
-            savePublishedToStorage();
-            
-            const now = new Date();
-            document.getElementById('lastUpdated').textContent = `Last updated: ${now.toLocaleString()}`;
+            if (newVersion) {
+                // Destroy and recreate published calendar
+                publishedCalendar.destroy();
+                initializePublishedCalendarFromData();
+                
+                const now = new Date(newVersion.timestamp);
+                document.getElementById('lastUpdated').textContent = `Last updated: ${now.toLocaleString()}`;
+                
+                alert(`Schedule published successfully!\nVersion ID: ${newVersion.id}\nThis replaces any previous version for this month.`);
+            } else {
+                alert('Error publishing schedule. Please try again.');
+            }
         }
-        
-        alert('Schedule published successfully and saved!');
     }
 
     function initializePublishedCalendarFromData() {
