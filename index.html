@@ -860,33 +860,32 @@
     let editedScheduleData = [];
     let currentEditDate = null;
 
-    // Load saved data and return it (don't modify global variables here)
+    // Load saved data on page load and set editedScheduleData properly
     function loadSavedData() {
         try {
             const savedPublished = localStorage.getItem('perfusionPublishedSchedule');
+            const savedEdits = localStorage.getItem('perfusionScheduleEdits');
             
+            // Load published data first (highest priority)
             if (savedPublished) {
                 const publishedData = JSON.parse(savedPublished);
-                console.log('📋 Found published schedule in localStorage:', {
-                    hasSchedule: !!publishedData.schedule,
-                    scheduleLength: publishedData.schedule?.length || 0,
-                    timestamp: publishedData.timestamp
-                });
+                console.log('Found published schedule data with', publishedData.schedule?.length || 0, 'rows');
+                // Also update editedScheduleData to the published schedule
+                if (publishedData.schedule) {
+                    editedScheduleData = JSON.parse(JSON.stringify(publishedData.schedule));
+                }
                 return publishedData;
-            } else {
-                console.log('❌ No published schedule found in localStorage');
             }
             
-            const savedEdits = localStorage.getItem('perfusionScheduleEdits');
+            // Fall back to saved edits if no published data
             if (savedEdits) {
                 const editsData = JSON.parse(savedEdits);
-                console.log('📝 Found saved edits in localStorage:', editsData.length, 'rows');
+                editedScheduleData = JSON.parse(JSON.stringify(editsData));
+                console.log('Loaded saved edits from localStorage with', editsData.length, 'rows');
                 return { schedule: editsData, timestamp: new Date().toISOString() };
-            } else {
-                console.log('❌ No saved edits found in localStorage');
             }
         } catch (error) {
-            console.error('❌ Error loading saved data:', error);
+            console.error('Error loading saved data:', error);
         }
         return null;
     }
@@ -915,12 +914,15 @@
         }
     }
 
-    // Page Navigation
+    // Page Navigation with proper data loading
     function showPage(pageId) {
         const pages = document.querySelectorAll('.page');
         pages.forEach(page => page.classList.remove('active'));
         
         document.getElementById(pageId).classList.add('active');
+        
+        // Load saved data first before initializing any calendar
+        const savedData = loadSavedData();
         
         if (pageId === 'schedulePage' && !calendar) {
             initializeCalendar();
@@ -960,13 +962,21 @@
         }
     }
 
-    // Allow Enter key to submit password
+    // Initialize page and load saved data on page load
     document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                checkPassword();
-            }
-        });
+        // Load saved data immediately when page loads
+        const savedData = loadSavedData();
+        console.log('Page loaded, saved data:', savedData ? 'found' : 'not found');
+        
+        // Set up password input event listener
+        const passwordInput = document.getElementById('passwordInput');
+        if (passwordInput) {
+            passwordInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    checkPassword();
+                }
+            });
+        }
     });
 
     // Date functions
@@ -1420,7 +1430,12 @@
 
     function initializeSupervisorEditCalendarFromData() {
         const calendarEl = document.getElementById('supervisorEditCalendar');
+        
+        // Make sure we have the latest saved data
+        const savedData = loadSavedData();
+        
         const events = createEditableEvents(editedScheduleData);
+        console.log('Reinitializing supervisor edit calendar with', events.length, 'events');
 
         supervisorEditCalendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
@@ -1447,18 +1462,40 @@
     }
 
     function publishSchedule() {
+        // Save current edited data as published
+        savePublishedToStorage();
+        
+        // Update the published calendar if it exists
         if (publishedCalendar) {
-            // Destroy and recreate to avoid stacking
             publishedCalendar.destroy();
-            initializePublishedCalendarFromData();
-            
-            // Save to localStorage
-            savePublishedToStorage();
-            
-            const now = new Date();
-            document.getElementById('lastUpdated').textContent = `Last updated: ${now.toLocaleString()}`;
         }
         
+        // Reinitialize published calendar with current edited data
+        const calendarEl = document.getElementById('publishedCalendar');
+        const events = createEventsFromData(editedScheduleData);
+
+        publishedCalendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,dayGridWeek,dayGridDay'
+            },
+            showNonCurrentDates: false,
+            fixedWeekCount: false,
+            events: events,
+            eventContent: function(arg) {
+                return { html: arg.event.title };
+            }
+        });
+
+        publishedCalendar.render();
+        
+        // Update timestamp
+        const now = new Date();
+        document.getElementById('lastUpdated').textContent = `Last updated: ${now.toLocaleString()}`;
+        
+        console.log('Published schedule with', editedScheduleData.length, 'rows of data');
         alert('Schedule published successfully and saved!');
     }
 
