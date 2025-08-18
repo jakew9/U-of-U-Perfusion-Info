@@ -3,1498 +3,770 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schedule Management App</title>
-    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.css' rel='stylesheet' />
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js'></script>
+    <title>U of U Perfusion Schedule Manager</title>
     <style>
-        body { 
-            font-family: sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            background-color: #f5f5f5;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        
-        /* Welcome Page Styles */
-        .welcome-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #cc0000 0%, #8b0000 50%, #660000 100%);
-            color: white;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        /* University of Utah pattern background */
-        .welcome-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: 
-                radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 2px, transparent 2px),
-                radial-gradient(circle at 75% 75%, rgba(255,255,255,0.08) 2px, transparent 2px);
-            background-size: 50px 50px;
-            background-position: 0 0, 25px 25px;
-            opacity: 0.3;
-        }
-        
-        /* Floating U logos */
-        .welcome-container::after {
-            content: 'U';
-            position: absolute;
-            font-size: 200px;
-            font-weight: 900;
-            color: rgba(255,255,255,0.03);
-            top: 10%;
-            right: -50px;
-            transform: rotate(-15deg);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        .welcome-title {
-            font-size: 4rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            text-align: center;
-            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            letter-spacing: -2px;
-            background: linear-gradient(45deg, #ffffff, #f0f0f0);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .welcome-subtitle {
-            font-size: 1.3rem;
-            font-weight: 300;
-            margin-bottom: 3rem;
-            text-align: center;
-            opacity: 0.9;
-            letter-spacing: 0.5px;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .button-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            max-width: 600px;
-            width: 100%;
-            padding: 0 2rem;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .nav-button {
-            padding: 1.2rem 2rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            min-height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .nav-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-        
-        .nav-button:hover::before {
-            left: 100%;
-        }
-        
-        .nav-button:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: translateY(-4px);
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
-            border-color: rgba(255, 255, 255, 0.4);
-        }
-        
-        .nav-button:active {
-            transform: translateY(-2px);
-            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        /* Supervisor Button Styles */
-        .supervisor-container {
-            margin-top: 2rem;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .supervisor-button {
-            background: linear-gradient(135deg, #ffa500 0%, #ff6b00 50%, #e55100 100%) !important;
-            border: 1px solid rgba(255, 165, 0, 0.3) !important;
-            font-weight: 700 !important;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            font-size: 0.95rem !important;
-            box-shadow: 0 8px 32px rgba(255, 165, 0, 0.2) !important;
-            min-width: 200px;
-        }
-        
-        .supervisor-button::before {
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent) !important;
-        }
-        
-        .supervisor-button:hover {
-            background: linear-gradient(135deg, #ffb733 0%, #ff7f33 50%, #f57c00 100%) !important;
-            transform: translateY(-4px) !important;
-            box-shadow: 0 16px 40px rgba(255, 165, 0, 0.3) !important;
-            border-color: rgba(255, 165, 0, 0.5) !important;
-        }
-        
-        .supervisor-button:active {
-            transform: translateY(-2px) !important;
-        }
-        
-        /* Additional floating elements */
-        .floating-element {
-            position: absolute;
-            color: rgba(255,255,255,0.05);
-            font-weight: 900;
-            pointer-events: none;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        .floating-1 {
-            top: 20%;
-            left: -30px;
-            font-size: 120px;
-            transform: rotate(25deg);
-            animation: float1 20s infinite ease-in-out;
-        }
-        
-        .floating-2 {
-            bottom: 15%;
-            right: -40px;
-            font-size: 150px;
-            transform: rotate(-20deg);
-            animation: float2 15s infinite ease-in-out;
-        }
-        
-        @keyframes float1 {
-            0%, 100% { transform: rotate(25deg) translateY(0px); }
-            50% { transform: rotate(25deg) translateY(-20px); }
-        }
-        
-        @keyframes float2 {
-            0%, 100% { transform: rotate(-20deg) translateY(0px); }
-            50% { transform: rotate(-20deg) translateY(20px); }
-        }
-        
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .welcome-title {
-                font-size: 2.5rem;
-            }
-            
-            .welcome-subtitle {
-                font-size: 1.1rem;
-            }
-            
-            .button-container {
-                grid-template-columns: 1fr;
-                max-width: 300px;
-            }
-            
-            .floating-element {
-                display: none;
-            }
-        }
-        
-        /* Page Styles */
-        .page {
-            display: none;
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
-        .page.active {
-            display: block;
-        }
-        
-        .page-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 2rem;
-            padding: 1rem;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .back-button {
-            padding: 0.5rem 1rem;
-            margin-right: 1rem;
-            background-color: #667eea;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-        
-        .back-button:hover {
-            background-color: #5a6fd8;
-        }
-        
-        .page-title {
-            font-size: 2rem;
-            color: #333;
-            margin: 0;
-        }
-        
-        /* Calendar Styles */
-        #calendar, #supervisorCalendar, #publishedCalendar {
-            max-width: 900px;
+
+        .container {
+            max-width: 1400px;
             margin: 0 auto;
+        }
+
+        .header {
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
-        
-        .fc-event, .fc-event-main {
-            white-space: normal !important;
-            height: auto !important;
-            line-height: 1.2 !important;
-        }
-        
-        .fc-event-title-container p {
-            margin: 0;
-            line-height: 1.2;
-            padding-top: 2px;
-            overflow: visible;
-            white-space: normal;
-        }
-        
-        .fc-daygrid-day-frame {
-            min-height: 100px;
-        }
-        
-        /* Weekend events should have no background */
-        .weekend-event {
-            background: transparent !important;
-            border: none !important;
-        }
-        
-        /* Supervisor Page Styles */
-        .supervisor-controls {
-            background: white;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .edit-instructions {
-            margin: 0;
-        }
-        
-        .edit-instructions p {
-            margin: 0.5rem 0;
-            color: #666;
-        }
-        
-        .publish-button {
-            padding: 0.5rem 1rem;
-            margin-left: auto;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-        }
-        
-        .publish-button:hover {
-            background-color: #218838;
-        }
-        
-        .last-updated {
-            color: #666;
-            font-style: italic;
-            margin-left: auto;
-        }
-        
-        /* Editable calendar events */
-        .fc-event.editable {
-            cursor: pointer;
-            border: 2px dashed transparent;
-        }
-        
-        .fc-event.editable:hover {
-            border: 2px dashed #333;
-            opacity: 0.8;
-        }
-        
-        /* Modal styles for editing */
-        .edit-modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        
-        .edit-modal-content {
-            background-color: white;
-            margin: 15% auto;
-            padding: 2rem;
-            border-radius: 10px;
-            width: 80%;
-            max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        
-        .edit-modal h3 {
-            margin-top: 0;
+
+        .header h1 {
             color: #333;
+            margin-bottom: 10px;
         }
-        
-        .edit-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .edit-form label {
-            font-weight: bold;
-            color: #555;
-        }
-        
-        .edit-form input {
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        
-        .edit-form-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-        }
-        
-        .edit-form-buttons button {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-        
-        .save-btn {
-            background-color: #28a745;
-            color: white;
-        }
-        
-        .save-btn:hover {
-            background-color: #218838;
-        }
-        
-        .cancel-btn {
-            background-color: #6c757d;
-            color: white;
-        }
-        
-        .cancel-btn:hover {
-            background-color: #545b62;
-        }
-        
-        /* Supervisor Menu Styles */
-        .supervisor-menu {
-            display: flex;
-            gap: 2rem;
-            justify-content: center;
-            margin-top: 2rem;
-        }
-        
-        .menu-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            text-align: center;
-            min-width: 250px;
-        }
-        
-        .menu-card h3 {
-            color: #667eea;
-            margin-top: 0;
-            margin-bottom: 1rem;
-        }
-        
-        .menu-card p {
+
+        .header p {
             color: #666;
-            margin-bottom: 1.5rem;
+            line-height: 1.6;
         }
-        
-        .menu-button {
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .calendar-container {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header {
             font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+
+        .calendar-day {
+            min-height: 100px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
-            width: 100%;
+            position: relative;
         }
-        
-        .view-button {
-            background-color: #17a2b8;
-            color: white;
+
+        .calendar-day:hover {
+            background: #f9f9f9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-        
-        .view-button:hover {
-            background-color: #138496;
+
+        .calendar-day.selected {
+            background: #e8eaf6;
+            border-color: #667eea;
         }
-        
-        .edit-button {
-            background-color: #ffc107;
-            color: #333;
-        }
-        
-        .edit-button:hover {
-            background-color: #e0a800;
-        }
-        
-        /* Password Modal Styles */
-        .password-modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        
-        .password-modal-content {
-            background-color: white;
-            margin: 15% auto;
-            padding: 2rem;
-            border-radius: 10px;
-            width: 80%;
-            max-width: 400px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            text-align: center;
-        }
-        
-        .password-input {
-            width: 100%;
-            padding: 1rem;
-            margin: 1rem 0;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 1.1rem;
-            text-align: center;
-        }
-        
-        .password-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-top: 1rem;
-        }
-        
-        .password-submit {
-            background-color: #28a745;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-        
-        .password-submit:hover {
-            background-color: #218838;
-        }
-        
-        .password-cancel {
-            background-color: #6c757d;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-        
-        .password-cancel:hover {
-            background-color: #545b62;
-        }
-        
-        .error-message {
-            color: #dc3545;
-            margin-top: 0.5rem;
-            font-weight: bold;
-        }
-        
-        /* Color picker styles */
-        .color-options {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
-        
-        .color-option {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            padding: 0.25rem;
-            border-radius: 3px;
-            transition: background-color 0.2s;
-        }
-        
-        .color-option:hover {
-            background-color: #f0f0f0;
-        }
-        
-        .color-option input[type="radio"] {
-            margin-right: 0.5rem;
-        }
-        
-        .color-preview {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 3px;
-            color: white;
-            font-size: 0.85rem;
-            min-width: 60px;
-            text-align: center;
-        }
-        
-        .auto-color {
-            background: linear-gradient(45deg, #B22222, #228B22, #FFFFFF);
-            color: #333;
-            font-weight: bold;
-        }
-        
-        /* Preferences and Important Dates Styles */
-        .content-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
-        .preferences-section {
-            margin-bottom: 2rem;
-        }
-        
-        .preferences-section h3 {
-            color: #667eea;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 0.5rem;
-        }
-        
-        .important-date-item {
-            padding: 1rem;
-            margin-bottom: 1rem;
-            background-color: #f8f9fa;
-            border-left: 4px solid #667eea;
-            border-radius: 5px;
-        }
-        
-        .date-title {
+
+        .day-number {
             font-weight: bold;
             color: #333;
+            margin-bottom: 5px;
         }
-        
-        .date-info {
+
+        .shift-info {
+            font-size: 0.85em;
+            margin: 3px 0;
+        }
+
+        .day-shift {
+            color: #4caf50;
+        }
+
+        .night-shift {
+            color: #2196f3;
+        }
+
+        .edit-controls {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .edit-controls h3 {
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
             color: #666;
-            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+
+        .schedule-summary {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .schedule-summary h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .month-selector {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .month-selector button {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .month-selector button:hover {
+            background: #5a67d8;
+        }
+
+        .version-control {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .version-control h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .version-item {
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .version-item:hover {
+            background: #f0f0f0;
+        }
+
+        .version-item .timestamp {
+            font-size: 0.85em;
+            color: #666;
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <div class="header">
+            <h1>U of U Perfusion Schedule Management</h1>
+            <p>Click on any date to edit day and night shift assignments. Use employee initials separated by forward slashes (/).<br>
+            Example: Day shift: JM/KL/RT | Night shift: AS/BN/CD</p>
+        </div>
 
-    <!-- Welcome Page -->
-    <div id="welcomePage" class="page active">
-        <div class="welcome-container">
-            <div class="floating-element floating-1">U</div>
-            <div class="floating-element floating-2">U</div>
-            <h1 class="welcome-title">U of U Perfusion</h1>
-            <p class="welcome-subtitle">Schedule Management System</p>
-            <div class="button-container">
-                <button class="nav-button" onclick="showPage('publishedSchedulePage')">Published Schedule</button>
-                <button class="nav-button" onclick="showPage('preferencesPage')">Preferences</button>
-                <button class="nav-button" onclick="showPage('importantDatesPage')">Important Dates</button>
-            </div>
-            <div class="supervisor-container">
-                <button class="nav-button supervisor-button" onclick="showPage('supervisorPage')">Supervisor Access</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Schedule Page -->
-    <div id="schedulePage" class="page">
-        <div class="page-header">
-            <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
-            <h1 class="page-title">Schedule Calendar</h1>
-        </div>
-        <div id='calendar'></div>
-    </div>
-
-    <!-- Supervisor Menu Page -->
-    <div id="supervisorPage" class="page">
-        <div class="page-header">
-            <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
-            <h1 class="page-title">Supervisor Menu</h1>
-        </div>
-        <div class="supervisor-menu">
-            <div class="menu-card">
-                <h3>View Calendar</h3>
-                <p>View the current schedule in read-only mode</p>
-                <button class="menu-button view-button" onclick="showPage('supervisorViewPage')">View Schedule</button>
-            </div>
-            <div class="menu-card">
-                <h3>Edit Calendar</h3>
-                <p>Edit shift assignments and publish changes</p>
-                <button class="menu-button edit-button" onclick="requestEditAccess()">Edit Schedule</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Supervisor View Page (Read-only) -->
-    <div id="supervisorViewPage" class="page">
-        <div class="page-header">
-            <button class="back-button" onclick="showPage('supervisorPage')">← Back</button>
-            <h1 class="page-title">Supervisor - View Schedule</h1>
-        </div>
-        <div id='supervisorViewCalendar'></div>
-    </div>
-
-    <!-- Supervisor Edit Page (Password Protected) -->
-    <div id="supervisorEditPage" class="page">
-        <div class="page-header">
-            <button class="back-button" onclick="showPage('supervisorPage')">← Back</button>
-            <h1 class="page-title">Supervisor - Edit Schedule</h1>
-            <button class="publish-button" onclick="publishSchedule()">Publish Schedule</button>
-        </div>
-        <div class="supervisor-controls">
-            <div class="edit-instructions">
-                <p><strong>Instructions:</strong> Click on any date to edit day and night shift assignments. Use employee initials separated by forward slashes (/).</p>
-                <p><strong>Example:</strong> Day shift: JM/KL/RT | Night shift: AS/BN/CD</p>
-            </div>
-        </div>
-        <div id='supervisorEditCalendar'></div>
-    </div>
-
-    <!-- Published Schedule Page -->
-    <div id="publishedSchedulePage" class="page">
-        <div class="page-header">
-            <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
-            <h1 class="page-title">Published Schedule</h1>
-            <div class="last-updated" id="lastUpdated"></div>
-        </div>
-        <div id='publishedCalendar'></div>
-    </div>
-
-    <!-- Preferences Page -->
-    <div id="preferencesPage" class="page">
-        <div class="page-header">
-            <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
-            <h1 class="page-title">Preferences</h1>
-        </div>
-        <div class="content-card">
-            <div class="preferences-section">
-                <h3>Calendar Settings</h3>
-                <p>Configure your calendar display preferences, color coding rules, and notification settings.</p>
-            </div>
-            <div class="preferences-section">
-                <h3>Shift Settings</h3>
-                <p>Manage shift types, employee classifications, and scheduling rules.</p>
-            </div>
-            <div class="preferences-section">
-                <h3>Data Source</h3>
-                <p>Configure your Google Sheets connection and data range settings.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Important Dates Page -->
-    <div id="importantDatesPage" class="page">
-        <div class="page-header">
-            <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
-            <h1 class="page-title">Important Dates</h1>
-        </div>
-        <div class="content-card">
-            <div class="important-date-item">
-                <div class="date-title">Holiday Schedule Changes</div>
-                <div class="date-info">Check for modified schedules during holiday periods</div>
-            </div>
-            <div class="important-date-item">
-                <div class="date-title">Training Days</div>
-                <div class="date-info">Mandatory training sessions and certification deadlines</div>
-            </div>
-            <div class="important-date-item">
-                <div class="date-title">Schedule Review Meetings</div>
-                <div class="date-info">Monthly schedule planning and review sessions</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Password Modal -->
-    <div id="passwordModal" class="password-modal">
-        <div class="password-modal-content">
-            <h3>Supervisor Access Required</h3>
-            <p>Enter password to access edit functions:</p>
-            <input type="password" id="passwordInput" class="password-input" placeholder="Enter password">
-            <div id="passwordError" class="error-message" style="display: none;"></div>
-            <div class="password-buttons">
-                <button class="password-cancel" onclick="closePasswordModal()">Cancel</button>
-                <button class="password-submit" onclick="checkPassword()">Submit</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Modal -->
-    <div id="editModal" class="edit-modal">
-        <div class="edit-modal-content">
-            <h3 id="editModalTitle">Edit Schedule for</h3>
-            <form class="edit-form" id="editForm">
-                <label for="dayShiftInput">Day Shift (use / to separate employees):</label>
-                <input type="text" id="dayShiftInput" placeholder="JM/KL/RT">
+        <div class="main-grid">
+            <!-- Edit Schedule Panel -->
+            <div class="panel">
+                <h2>Edit Schedule</h2>
                 
-                <label for="nightShiftInput">Night Shift (use / to separate employees):</label>
-                <input type="text" id="nightShiftInput" placeholder="AS/BN/CD">
+                <div id="editStatus" class="status-message"></div>
                 
-                <label for="backgroundColorInput">Background Color:</label>
-                <div class="color-options">
-                    <label class="color-option">
-                        <input type="radio" name="backgroundColor" value="auto" checked>
-                        <span class="color-preview auto-color">Auto (based on staffing)</span>
-                    </label>
-                    <label class="color-option">
-                        <input type="radio" name="backgroundColor" value="#ff6b6b">
-                        <span class="color-preview" style="background-color: #ff6b6b;">Red</span>
-                    </label>
-                    <label class="color-option">
-                        <input type="radio" name="backgroundColor" value="#4ecdc4">
-                        <span class="color-preview" style="background-color: #4ecdc4;">Teal</span>
-                    </label>
-                    <label class="color-option">
-                        <input type="radio" name="backgroundColor" value="#45b7d1">
-                        <span class="color-preview" style="background-color: #45b7d1;">Blue</span>
-                    </label>
-                    <label class="color-option">
-                        <input type="radio" name="backgroundColor" value="#f9ca24">
-                        <span class="color-preview" style="background-color: #f9ca24;">Yellow</span>
-                    </label>
-                    <label class="color-option">
-                        <input type="radio" name="backgroundColor" value="#6c5ce7">
-                        <span class="color-preview" style="background-color: #6c5ce7;">Purple</span>
-                    </label>
-                    <label class="color-option">
-                        <input type="radio" name="backgroundColor" value="#a55eea">
-                        <span class="color-preview" style="background-color: #a55eea;">Pink</span>
-                    </label>
-                    <label class="color-option">
-                        <input type="radio" name="backgroundColor" value="#26de81">
-                        <span class="color-preview" style="background-color: #26de81;">Green</span>
-                    </label>
-                    <label class="color-option">
-                        <input type="radio" name="backgroundColor" value="#fd79a8">
-                        <span class="color-preview" style="background-color: #fd79a8;">Light Pink</span>
-                    </label>
+                <div class="month-selector">
+                    <button onclick="changeMonth(-1)">← Previous</button>
+                    <h3 id="currentMonth"></h3>
+                    <button onclick="changeMonth(1)">Next →</button>
                 </div>
-                
-                <div class="edit-form-buttons">
-                    <button type="button" class="cancel-btn" onclick="closeEditModal()">Cancel</button>
-                    <button type="button" class="save-btn" onclick="saveEdit()">Save</button>
+
+                <div class="edit-controls">
+                    <h3 id="selectedDateDisplay">Select a date to edit</h3>
+                    
+                    <div class="input-group">
+                        <label for="dayShift">Day Shift (use / to separate initials)</label>
+                        <input type="text" id="dayShift" placeholder="e.g., JM/KL/RT" disabled>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="nightShift">Night Shift (use / to separate initials)</label>
+                        <input type="text" id="nightShift" placeholder="e.g., AS/BN/CD" disabled>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-secondary" onclick="clearSelectedDate()" id="clearBtn" disabled>Clear</button>
+                        <button class="btn btn-primary" onclick="saveDate()" id="saveBtn" disabled>Save Date</button>
+                    </div>
                 </div>
-            </form>
+
+                <div class="calendar-container" id="editCalendar">
+                    <!-- Calendar will be generated here -->
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-danger" onclick="discardChanges()">Discard All Changes</button>
+                    <button class="btn btn-success" onclick="publishSchedule()">Publish Schedule</button>
+                </div>
+
+                <div class="version-control">
+                    <h4>Schedule Versions</h4>
+                    <div id="versionList"></div>
+                </div>
+            </div>
+
+            <!-- Published Schedule Panel -->
+            <div class="panel">
+                <h2>Published Schedule</h2>
+                
+                <div id="publishStatus" class="status-message"></div>
+                
+                <div class="month-selector">
+                    <button onclick="changePublishedMonth(-1)">← Previous</button>
+                    <h3 id="publishedMonth"></h3>
+                    <button onclick="changePublishedMonth(1)">Next →</button>
+                </div>
+
+                <div class="calendar-container" id="publishedCalendar">
+                    <!-- Published calendar will be displayed here -->
+                </div>
+
+                <div class="schedule-summary">
+                    <h4>Schedule Summary</h4>
+                    <div id="scheduleSummary"></div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-    // Configuration
-    const apiKey = 'AIzaSyCyCEmSvunsn8C82AwhSyX5joXy2hstPls';
-    const spreadsheetId = '1pKNJK3nvpcwQor1obQm1V6qiWfwOPmImV361Qfqul8E';
-    const range = 'Sheet2!A13:T54'; 
+        // Schedule data storage
+        let editScheduleData = {};
+        let publishedScheduleData = {};
+        let selectedDate = null;
+        let currentEditMonth = new Date();
+        let currentPublishedMonth = new Date();
+        let scheduleVersions = [];
 
-    let calendar;
-    let supervisorViewCalendar;
-    let supervisorEditCalendar;
-    let publishedCalendar;
-    let originalScheduleData = [];
-    let editedScheduleData = [];
-    let currentEditDate = null;
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromStorage();
+            renderEditCalendar();
+            renderPublishedCalendar();
+            updateVersionList();
+        });
 
-    // Load saved data on page load and set editedScheduleData properly
-    function loadSavedData() {
-        try {
-            const savedPublished = localStorage.getItem('perfusionPublishedSchedule');
-            const savedEdits = localStorage.getItem('perfusionScheduleEdits');
+        // Load data from localStorage
+        function loadFromStorage() {
+            const savedEdit = localStorage.getItem('editSchedule');
+            const savedPublished = localStorage.getItem('publishedSchedule');
+            const savedVersions = localStorage.getItem('scheduleVersions');
             
-            // Load published data first (highest priority)
+            if (savedEdit) {
+                editScheduleData = JSON.parse(savedEdit);
+            }
             if (savedPublished) {
-                const publishedData = JSON.parse(savedPublished);
-                console.log('Found published schedule data with', publishedData.schedule?.length || 0, 'rows');
-                // Also update editedScheduleData to the published schedule
-                if (publishedData.schedule) {
-                    editedScheduleData = JSON.parse(JSON.stringify(publishedData.schedule));
-                }
-                return publishedData;
+                publishedScheduleData = JSON.parse(savedPublished);
+            }
+            if (savedVersions) {
+                scheduleVersions = JSON.parse(savedVersions);
+            }
+        }
+
+        // Save data to localStorage
+        function saveToStorage() {
+            localStorage.setItem('editSchedule', JSON.stringify(editScheduleData));
+            localStorage.setItem('publishedSchedule', JSON.stringify(publishedScheduleData));
+            localStorage.setItem('scheduleVersions', JSON.stringify(scheduleVersions));
+        }
+
+        // Render the edit calendar
+        function renderEditCalendar() {
+            const calendar = document.getElementById('editCalendar');
+            calendar.innerHTML = '';
+            
+            // Add day headers
+            const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-header';
+                header.textContent = day;
+                calendar.appendChild(header);
+            });
+            
+            // Get first day of month and number of days
+            const year = currentEditMonth.getFullYear();
+            const month = currentEditMonth.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            // Update month display
+            document.getElementById('currentMonth').textContent = 
+                currentEditMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            // Add empty cells for days before month starts
+            for (let i = 0; i < firstDay; i++) {
+                calendar.appendChild(document.createElement('div'));
             }
             
-            // Fall back to saved edits if no published data
-            if (savedEdits) {
-                const editsData = JSON.parse(savedEdits);
-                editedScheduleData = JSON.parse(JSON.stringify(editsData));
-                console.log('Loaded saved edits from localStorage with', editsData.length, 'rows');
-                return { schedule: editsData, timestamp: new Date().toISOString() };
+            // Add days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = createDayElement(day, month, year, true);
+                calendar.appendChild(dayElement);
             }
-        } catch (error) {
-            console.error('Error loading saved data:', error);
         }
-        return null;
-    }
 
-    // Save edits to localStorage
-    function saveEditsToStorage() {
-        try {
-            localStorage.setItem('perfusionScheduleEdits', JSON.stringify(editedScheduleData));
-            console.log('Saved edits to localStorage');
-        } catch (error) {
-            console.error('Error saving edits:', error);
-        }
-    }
-
-    // Save published schedule to localStorage
-    function savePublishedToStorage() {
-        try {
-            const publishedData = {
-                schedule: editedScheduleData,
-                timestamp: new Date().toISOString()
-            };
-            localStorage.setItem('perfusionPublishedSchedule', JSON.stringify(publishedData));
-            console.log('Saved published schedule to localStorage');
-        } catch (error) {
-            console.error('Error saving published schedule:', error);
-        }
-    }
-
-    // Page Navigation
-    function showPage(pageId) {
-        const pages = document.querySelectorAll('.page');
-        pages.forEach(page => page.classList.remove('active'));
-        
-        document.getElementById(pageId).classList.add('active');
-        
-        if (pageId === 'schedulePage' && !calendar) {
-            initializeCalendar();
-        } else if (pageId === 'supervisorViewPage' && !supervisorViewCalendar) {
-            initializeSupervisorViewCalendar();
-        } else if (pageId === 'supervisorEditPage' && !supervisorEditCalendar) {
-            initializeSupervisorEditCalendar();
-        } else if (pageId === 'publishedSchedulePage' && !publishedCalendar) {
-            initializePublishedCalendar();
-        }
-    }
-
-    // Password protection for edit access
-    function requestEditAccess() {
-        document.getElementById('passwordModal').style.display = 'block';
-        document.getElementById('passwordInput').focus();
-    }
-
-    function closePasswordModal() {
-        document.getElementById('passwordModal').style.display = 'none';
-        document.getElementById('passwordInput').value = '';
-        document.getElementById('passwordError').style.display = 'none';
-    }
-
-    function checkPassword() {
-        const password = document.getElementById('passwordInput').value;
-        const correctPassword = 'CHRIS';
-        
-        if (password === correctPassword) {
-            closePasswordModal();
-            showPage('supervisorEditPage');
-        } else {
-            document.getElementById('passwordError').textContent = 'Incorrect password. Please try again.';
-            document.getElementById('passwordError').style.display = 'block';
-            document.getElementById('passwordInput').value = '';
-            document.getElementById('passwordInput').focus();
-        }
-    }
-
-    // Allow Enter key to submit password
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                checkPassword();
+        // Render the published calendar
+        function renderPublishedCalendar() {
+            const calendar = document.getElementById('publishedCalendar');
+            calendar.innerHTML = '';
+            
+            // Add day headers
+            const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-header';
+                header.textContent = day;
+                calendar.appendChild(header);
+            });
+            
+            // Get first day of month and number of days
+            const year = currentPublishedMonth.getFullYear();
+            const month = currentPublishedMonth.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            // Update month display
+            document.getElementById('publishedMonth').textContent = 
+                currentPublishedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            // Add empty cells for days before month starts
+            for (let i = 0; i < firstDay; i++) {
+                calendar.appendChild(document.createElement('div'));
             }
-        });
-    });
-
-    // Date functions
-    function parseDate(dateString) {
-        if (!dateString) return null;
-        const date = new Date(dateString);
-        const year = date.getFullYear();
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const day = date.getDate().toString().padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-
-    function getCorrectDayOfWeek(dateString) {
-        const [year, month, day] = dateString.split('-').map(Number);
-        const date = new Date(year, month - 1, day);
-        return date.getDay();
-    }
-
-    // Calendar initialization functions
-    function initializeCalendar() {
-        const calendarEl = document.getElementById('calendar');
-
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                const values = data.values;
-                const events = createEventsFromData(values || []);
-
-                calendar = new FullCalendar.Calendar(calendarEl, {
-                    initialView: 'dayGridMonth',
-                    headerToolbar: {
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,dayGridWeek,dayGridDay'
-                    },
-                    showNonCurrentDates: false,
-                    fixedWeekCount: false,
-                    events: events,
-                    eventContent: function(arg) {
-                        return { html: arg.event.title };
-                    }
-                });
-
-                calendar.render();
-            })
-            .catch(error => {
-                console.error('Error fetching data: ', error);
-                calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
-            });
-    }
-
-    function initializeSupervisorViewCalendar() {
-        const calendarEl = document.getElementById('supervisorViewCalendar');
-
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                const values = data.values;
-                const events = createEventsFromData(values || []);
-
-                supervisorViewCalendar = new FullCalendar.Calendar(calendarEl, {
-                    initialView: 'dayGridMonth',
-                    headerToolbar: {
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,dayGridWeek,dayGridDay'
-                    },
-                    showNonCurrentDates: false,
-                    fixedWeekCount: false,
-                    events: events,
-                    eventContent: function(arg) {
-                        return { html: arg.event.title };
-                    }
-                });
-
-                supervisorViewCalendar.render();
-            })
-            .catch(error => {
-                console.error('Error fetching data: ', error);
-                calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
-            });
-    }
-
-    function initializeSupervisorEditCalendar() {
-        const calendarEl = document.getElementById('supervisorEditCalendar');
-
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                const values = data.values;
-                originalScheduleData = values || [];
-                
-                // Load saved data and set editedScheduleData properly
-                const savedPublishedData = loadSavedData();
-                
-                if (savedPublishedData && savedPublishedData.schedule) {
-                    // Use the published schedule as the starting point
-                    editedScheduleData = JSON.parse(JSON.stringify(savedPublishedData.schedule));
-                    console.log('Loaded published schedule for editing:', editedScheduleData.length, 'rows');
-                } else {
-                    // Fall back to original data if no saved data
-                    editedScheduleData = JSON.parse(JSON.stringify(originalScheduleData));
-                    console.log('Using original Google Sheets data:', editedScheduleData.length, 'rows');
-                }
-                
-                const events = createEditableEvents(editedScheduleData);
-                console.log('Created', events.length, 'events for supervisor edit calendar');
-
-                supervisorEditCalendar = new FullCalendar.Calendar(calendarEl, {
-                    initialView: 'dayGridMonth',
-                    headerToolbar: {
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,dayGridWeek,dayGridDay'
-                    },
-                    showNonCurrentDates: false,
-                    fixedWeekCount: false,
-                    events: events,
-                    eventContent: function(arg) {
-                        return { html: arg.event.title };
-                    },
-                    eventClick: function(info) {
-                        openEditModal(info.event.startStr, info.event.extendedProps.dayShift, info.event.extendedProps.nightShift);
-                    },
-                    dateClick: function(info) {
-                        openEditModal(info.dateStr, '', '');
-                    }
-                });
-
-                supervisorEditCalendar.render();
-            })
-            .catch(error => {
-                console.error('Error fetching data: ', error);
-                calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
-            });
-    }
-
-    function initializeSupervisorCalendar() {
-        const calendarEl = document.getElementById('supervisorCalendar');
-
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                const values = data.values;
-                originalScheduleData = values || [];
-                // Ensure each row has enough columns for custom color
-                editedScheduleData = originalScheduleData.map(row => {
-                    const newRow = [...row];
-                    while (newRow.length < 19) {
-                        newRow.push('');
-                    }
-                    return newRow;
-                });
-                
-                const events = createEditableEvents(editedScheduleData);
-
-                supervisorCalendar = new FullCalendar.Calendar(calendarEl, {
-                    initialView: 'dayGridMonth',
-                    headerToolbar: {
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,dayGridWeek,dayGridDay'
-                    },
-                    showNonCurrentDates: false,
-                    fixedWeekCount: false,
-                    events: events,
-                    eventContent: function(arg) {
-                        return { html: arg.event.title };
-                    },
-                    eventClick: function(info) {
-                        openEditModal(info.event.startStr, info.event.extendedProps.dayShift, info.event.extendedProps.nightShift);
-                    },
-                    dateClick: function(info) {
-                        openEditModal(info.dateStr, '', '');
-                    }
-                });
-
-                supervisorCalendar.render();
-            })
-            .catch(error => {
-                console.error('Error fetching data: ', error);
-                calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
-            });
-    }
-
-    function initializePublishedCalendar() {
-        const calendarEl = document.getElementById('publishedCalendar');
-        
-        // Check for saved published data first
-        const savedPublishedData = loadSavedData();
-        
-        if (savedPublishedData && savedPublishedData.schedule) {
-            // Use saved published data
-            const events = createEventsFromData(savedPublishedData.schedule);
             
-            publishedCalendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
-                },
-                showNonCurrentDates: false,
-                fixedWeekCount: false,
-                events: events,
-                eventContent: function(arg) {
-                    return { html: arg.event.title };
-                }
-            });
-
-            publishedCalendar.render();
+            // Add days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = createDayElement(day, month, year, false);
+                calendar.appendChild(dayElement);
+            }
             
-            // Update last updated time
-            const lastUpdated = new Date(savedPublishedData.timestamp).toLocaleString();
-            document.getElementById('lastUpdated').textContent = `Last updated: ${lastUpdated}`;
-            
-        } else if (editedScheduleData.length > 0) {
-            // Use edited data if it exists
-            const events = createEventsFromData(editedScheduleData);
-
-            publishedCalendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
-                },
-                showNonCurrentDates: false,
-                fixedWeekCount: false,
-                events: events,
-                eventContent: function(arg) {
-                    return { html: arg.event.title };
-                }
-            });
-
-            publishedCalendar.render();
-        } else {
-            // Fetch original data if no saved data exists
-            fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    const values = data.values || [];
-                    const events = createEventsFromData(values);
-
-                    publishedCalendar = new FullCalendar.Calendar(calendarEl, {
-                        initialView: 'dayGridMonth',
-                        headerToolbar: {
-                            left: 'prev,next today',
-                            center: 'title',
-                            right: 'dayGridMonth,dayGridWeek,dayGridDay'
-                        },
-                        showNonCurrentDates: false,
-                        fixedWeekCount: false,
-                        events: events,
-                        eventContent: function(arg) {
-                            return { html: arg.event.title };
-                        }
-                    });
-
-                    publishedCalendar.render();
-                })
-                .catch(error => {
-                    console.error('Error fetching data: ', error);
-                    calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
-                });
+            updateScheduleSummary();
         }
-    }
 
-    // Event creation functions
-    function createEventsFromData(data) {
-        const events = [];
-        
-        data.forEach(row => {
-            const date = row[0];        
-            const dayShiftData = row[16];   
-            const nightShiftData = row[17];
-            // Check if there's a custom color stored beyond the normal data range
-            const customColor = row.length > 20 ? row[20] : ''; // Use index 20 for custom color to avoid conflicts
+        // Create a day element for the calendar
+        function createDayElement(day, month, year, isEditable) {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'calendar-day';
             
-            const formattedDate = parseDate(date);
+            const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const scheduleData = isEditable ? editScheduleData[dateKey] : publishedScheduleData[dateKey];
             
-            if (formattedDate) {
-                const dayOfWeek = getCorrectDayOfWeek(formattedDate);
-                let titleHTML = '';
-
-                if (dayShiftData) {
-                    titleHTML += `<p>${dayShiftData}</p>`;
+            // Check if this is the selected date
+            if (isEditable && selectedDate === dateKey) {
+                dayElement.classList.add('selected');
+            }
+            
+            // Day number
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'day-number';
+            dayNumber.textContent = day;
+            dayElement.appendChild(dayNumber);
+            
+            // Add shift information if it exists
+            if (scheduleData) {
+                if (scheduleData.dayShift) {
+                    const dayShift = document.createElement('div');
+                    dayShift.className = 'shift-info day-shift';
+                    dayShift.textContent = `D: ${scheduleData.dayShift}`;
+                    dayElement.appendChild(dayShift);
                 }
-                if (nightShiftData) {
-                    titleHTML += `<p>${nightShiftData}</p>`;
-                }
-
-                if (titleHTML) {
-                    const eventData = {
-                        title: titleHTML,
-                        start: formattedDate,
-                        allDay: true
-                    };
-                    
-                    // Debug: log color decisions
-                    console.log(`Date: ${formattedDate}, Custom Color: ${customColor}, Day of Week: ${dayOfWeek}`);
-                    
-                    // Check for custom color first (only if it's a valid color, not employee initials)
-                    if (customColor && customColor.startsWith('#')) {
-                        eventData.backgroundColor = customColor;
-                        eventData.borderColor = customColor;
-                        eventData.textColor = '#ffffff';
-                        console.log(`Applied custom color: ${customColor}`);
-                    } else if (dayOfWeek === 0 || dayOfWeek === 6) {
-                        // Weekend styling
-                        eventData.backgroundColor = 'transparent';
-                        eventData.borderColor = 'transparent';
-                        eventData.textColor = '#000000';
-                        eventData.classNames = ['weekend-event'];
-                        console.log('Applied weekend styling');
-                    } else {
-                        // Weekday automatic color coding
-                        const allShifts = [dayShiftData, nightShiftData].filter(Boolean).join('/');
-                        const employees = allShifts.split('/').filter(initial => initial.trim() !== '');
-                        const employeeCount = employees.length;
-
-                        if (employeeCount >= 6) {
-                            eventData.backgroundColor = '#FFFFFF';
-                            eventData.borderColor = '#FFFFFF';
-                            eventData.textColor = '#000000'; 
-                        } else if (employeeCount === 5) {
-                            eventData.backgroundColor = '#228B22';
-                            eventData.borderColor = '#228B22';
-                            eventData.textColor = '#ffffff';
-                        } else if (employeeCount <= 4) {
-                            eventData.backgroundColor = '#B22222';
-                            eventData.borderColor = '#B22222';
-                            eventData.textColor = '#ffffff';
-                        }
-                        console.log(`Applied auto color for ${employeeCount} employees: ${eventData.backgroundColor}`);
-                    }
-                    
-                    events.push(eventData);
+                
+                if (scheduleData.nightShift) {
+                    const nightShift = document.createElement('div');
+                    nightShift.className = 'shift-info night-shift';
+                    nightShift.textContent = `N: ${scheduleData.nightShift}`;
+                    dayElement.appendChild(nightShift);
                 }
             }
-        });
-        
-        return events;
-    }
+            
+            // Add click handler for editable calendar
+            if (isEditable) {
+                dayElement.onclick = () => selectDate(dateKey, day, month, year);
+            }
+            
+            return dayElement;
+        }
 
-    function createEditableEvents(data) {
-        const events = createEventsFromData(data);
-        
-        // Add extended props and editable class
-        events.forEach(event => {
-            const dateRow = data.find(row => parseDate(row[0]) === event.start);
-            if (dateRow) {
-                event.extendedProps = {
-                    dayShift: dateRow[16] || '',
-                    nightShift: dateRow[17] || '',
-                    customColor: dateRow[18] || ''
+        // Select a date for editing
+        function selectDate(dateKey, day, month, year) {
+            selectedDate = dateKey;
+            
+            // Update display
+            const monthName = new Date(year, month).toLocaleDateString('en-US', { month: 'long' });
+            document.getElementById('selectedDateDisplay').textContent = `${monthName} ${day}, ${year}`;
+            
+            // Enable inputs
+            document.getElementById('dayShift').disabled = false;
+            document.getElementById('nightShift').disabled = false;
+            document.getElementById('saveBtn').disabled = false;
+            document.getElementById('clearBtn').disabled = false;
+            
+            // Load existing data if available
+            if (editScheduleData[dateKey]) {
+                document.getElementById('dayShift').value = editScheduleData[dateKey].dayShift || '';
+                document.getElementById('nightShift').value = editScheduleData[dateKey].nightShift || '';
+            } else {
+                document.getElementById('dayShift').value = '';
+                document.getElementById('nightShift').value = '';
+            }
+            
+            // Re-render calendar to show selection
+            renderEditCalendar();
+        }
+
+        // Save date information
+        function saveDate() {
+            if (!selectedDate) return;
+            
+            const dayShift = document.getElementById('dayShift').value.trim();
+            const nightShift = document.getElementById('nightShift').value.trim();
+            
+            if (dayShift || nightShift) {
+                editScheduleData[selectedDate] = {
+                    dayShift: dayShift,
+                    nightShift: nightShift
                 };
+            } else {
+                delete editScheduleData[selectedDate];
             }
-            event.classNames = event.classNames || [];
-            event.classNames.push('editable');
-        });
-        
-        return events;
-    }
-
-    // Modal functions
-    function openEditModal(dateStr, dayShift, nightShift) {
-        currentEditDate = dateStr;
-        document.getElementById('editModalTitle').textContent = `Edit Schedule for ${dateStr}`;
-        document.getElementById('dayShiftInput').value = dayShift || '';
-        document.getElementById('nightShiftInput').value = nightShift || '';
-        
-        // Reset color selection to auto
-        document.querySelector('input[name="backgroundColor"][value="auto"]').checked = true;
-        
-        // Check if this date has a custom color stored at index 20
-        const existingRow = editedScheduleData.find(row => parseDate(row[0]) === dateStr);
-        if (existingRow && existingRow[20] && existingRow[20].startsWith('#')) {
-            const colorOption = document.querySelector(`input[name="backgroundColor"][value="${existingRow[20]}"]`);
-            if (colorOption) {
-                colorOption.checked = true;
-            }
+            
+            saveToStorage();
+            renderEditCalendar();
+            showStatus('editStatus', 'Date saved successfully!', 'success');
         }
-        
-        document.getElementById('editModal').style.display = 'block';
-    }
 
-    function closeEditModal() {
-        document.getElementById('editModal').style.display = 'none';
-        currentEditDate = null;
-    }
+        // Clear selected date
+        function clearSelectedDate() {
+            if (!selectedDate) return;
+            
+            delete editScheduleData[selectedDate];
+            document.getElementById('dayShift').value = '';
+            document.getElementById('nightShift').value = '';
+            
+            saveToStorage();
+            renderEditCalendar();
+            showStatus('editStatus', 'Date cleared!', 'info');
+        }
 
-    function saveEdit() {
-        if (!currentEditDate) return;
-        
-        const dayShift = document.getElementById('dayShiftInput').value.trim();
-        const nightShift = document.getElementById('nightShiftInput').value.trim();
-        const selectedColor = document.querySelector('input[name="backgroundColor"]:checked').value;
-        
-        // Parse the date correctly
-        const [year, month, day] = currentEditDate.split('-').map(Number);
-        const targetDate = new Date(year, month - 1, day); // month is 0-indexed
-        let rowFound = false;
-        
-        editedScheduleData.forEach(row => {
-            if (row[0]) {
-                const rowDate = parseDate(row[0]);
-                if (rowDate === currentEditDate) {
-                    row[16] = dayShift;
-                    row[17] = nightShift;
-                    // Ensure row is long enough and store custom color at index 20
-                    while (row.length <= 20) {
-                        row.push('');
-                    }
-                    row[20] = selectedColor === 'auto' ? '' : selectedColor; // Store custom color at index 20
-                    rowFound = true;
+        // Publish the schedule
+        function publishSchedule() {
+            if (Object.keys(editScheduleData).length === 0) {
+                showStatus('editStatus', 'No schedule data to publish!', 'error');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to publish this schedule? This will replace the current published schedule.')) {
+                // Create a version backup
+                const version = {
+                    timestamp: new Date().toISOString(),
+                    data: JSON.parse(JSON.stringify(publishedScheduleData))
+                };
+                scheduleVersions.unshift(version);
+                
+                // Keep only last 5 versions
+                if (scheduleVersions.length > 5) {
+                    scheduleVersions = scheduleVersions.slice(0, 5);
                 }
+                
+                // Replace published schedule with edit schedule
+                publishedScheduleData = JSON.parse(JSON.stringify(editScheduleData));
+                
+                saveToStorage();
+                renderPublishedCalendar();
+                updateVersionList();
+                
+                showStatus('editStatus', 'Schedule published successfully!', 'success');
+                showStatus('publishStatus', 'Schedule updated!', 'success');
             }
-        });
-        
-        if (!rowFound) {
-            const newRow = new Array(21).fill(''); // Create array with 21 elements
-            newRow[0] = currentEditDate;
-            newRow[16] = dayShift;
-            newRow[17] = nightShift;
-            newRow[20] = selectedColor === 'auto' ? '' : selectedColor;
-            editedScheduleData.push(newRow);
         }
-        
-        // Completely refresh the supervisor calendar to avoid stacking
-        supervisorEditCalendar.destroy();
-        initializeSupervisorEditCalendarFromData();
-        
-        // Save edits automatically
-        saveEditsToStorage();
-        
-        closeEditModal();
-    }
 
-    function initializeSupervisorEditCalendarFromData() {
-        const calendarEl = document.getElementById('supervisorEditCalendar');
-        const events = createEditableEvents(editedScheduleData);
-
-        supervisorEditCalendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,dayGridWeek,dayGridDay'
-            },
-            showNonCurrentDates: false,
-            fixedWeekCount: false,
-            events: events,
-            eventContent: function(arg) {
-                return { html: arg.event.title };
-            },
-            eventClick: function(info) {
-                openEditModal(info.event.startStr, info.event.extendedProps.dayShift, info.event.extendedProps.nightShift);
-            },
-            dateClick: function(info) {
-                openEditModal(info.dateStr, '', '');
+        // Discard all changes
+        function discardChanges() {
+            if (confirm('Are you sure you want to discard all changes? This cannot be undone.')) {
+                editScheduleData = {};
+                selectedDate = null;
+                document.getElementById('dayShift').value = '';
+                document.getElementById('nightShift').value = '';
+                document.getElementById('dayShift').disabled = true;
+                document.getElementById('nightShift').disabled = true;
+                document.getElementById('saveBtn').disabled = true;
+                document.getElementById('clearBtn').disabled = true;
+                document.getElementById('selectedDateDisplay').textContent = 'Select a date to edit';
+                
+                saveToStorage();
+                renderEditCalendar();
+                showStatus('editStatus', 'All changes discarded!', 'info');
             }
-        });
-
-        supervisorEditCalendar.render();
-    }
-
-    function publishSchedule() {
-        if (publishedCalendar) {
-            // Destroy and recreate to avoid stacking
-            publishedCalendar.destroy();
-            initializePublishedCalendarFromData();
-            
-            // Save to localStorage
-            savePublishedToStorage();
-            
-            const now = new Date();
-            document.getElementById('lastUpdated').textContent = `Last updated: ${now.toLocaleString()}`;
         }
-        
-        alert('Schedule published successfully and saved!');
-    }
 
-    function initializePublishedCalendarFromData() {
-        const calendarEl = document.getElementById('publishedCalendar');
-        const events = createEventsFromData(editedScheduleData);
+        // Change month for edit calendar
+        function changeMonth(direction) {
+            currentEditMonth.setMonth(currentEditMonth.getMonth() + direction);
+            renderEditCalendar();
+        }
 
-        publishedCalendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,dayGridWeek,dayGridDay'
-            },
-            showNonCurrentDates: false,
-            fixedWeekCount: false,
-            events: events,
-            eventContent: function(arg) {
-                return { html: arg.event.title };
+        // Change month for published calendar
+        function changePublishedMonth(direction) {
+            currentPublishedMonth.setMonth(currentPublishedMonth.getMonth() + direction);
+            renderPublishedCalendar();
+        }
+
+        // Show status message
+        function showStatus(elementId, message, type) {
+            const statusElement = document.getElementById(elementId);
+            statusElement.textContent = message;
+            statusElement.className = `status-message ${type}`;
+            
+            setTimeout(() => {
+                statusElement.className = 'status-message';
+            }, 3000);
+        }
+
+        // Update schedule summary
+        function updateScheduleSummary() {
+            const summary = document.getElementById('scheduleSummary');
+            const year = currentPublishedMonth.getFullYear();
+            const month = currentPublishedMonth.getMonth();
+            
+            let totalDayShifts = 0;
+            let totalNightShifts = 0;
+            let employeeCount = new Set();
+            
+            // Count shifts for the current month
+            Object.keys(publishedScheduleData).forEach(dateKey => {
+                const [keyYear, keyMonth] = dateKey.split('-');
+                if (parseInt(keyYear) === year && parseInt(keyMonth) - 1 === month) {
+                    const data = publishedScheduleData[dateKey];
+                    if (data.dayShift) {
+                        totalDayShifts++;
+                        data.dayShift.split('/').forEach(emp => employeeCount.add(emp.trim()));
+                    }
+                    if (data.nightShift) {
+                        totalNightShifts++;
+                        data.nightShift.split('/').forEach(emp => employeeCount.add(emp.trim()));
+                    }
+                }
+            });
+            
+            summary.innerHTML = `
+                <div class="summary-item">
+                    <span>Total Day Shifts:</span>
+                    <strong>${totalDayShifts}</strong>
+                </div>
+                <div class="summary-item">
+                    <span>Total Night Shifts:</span>
+                    <strong>${totalNightShifts}</strong>
+                </div>
+                <div class="summary-item">
+                    <span>Unique Employees:</span>
+                    <strong>${employeeCount.size}</strong>
+                </div>
+            `;
+        }
+
+        // Update version list
+        function updateVersionList() {
+            const versionList = document.getElementById('versionList');
+            
+            if (scheduleVersions.length === 0) {
+                versionList.innerHTML = '<div style="color: #666;">No previous versions available</div>';
+                return;
             }
-        });
+            
+            versionList.innerHTML = '';
+            scheduleVersions.forEach((version, index) => {
+                const versionItem = document.createElement('div');
+                versionItem.className = 'version-item';
+                const date = new Date(version.timestamp);
+                versionItem.innerHTML = `
+                    <strong>Version ${index + 1}</strong>
+                    <div class="timestamp">${date.toLocaleString()}</div>
+                `;
+                versionItem.onclick = () => restoreVersion(index);
+                versionList.appendChild(versionItem);
+            });
+        }
 
-        publishedCalendar.render();
-    }
+        // Restore a previous version
+        function restoreVersion(index) {
+            if (confirm('Restore this version? Current published schedule will be replaced.')) {
+                const version = scheduleVersions[index];
+                publishedScheduleData = JSON.parse(JSON.stringify(version.data));
+                saveToStorage();
+                renderPublishedCalendar();
+                showStatus('publishStatus', 'Previous version restored!', 'success');
+            }
+        }
     </script>
 </body>
 </html>
