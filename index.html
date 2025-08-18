@@ -866,16 +866,18 @@
             const savedEdits = localStorage.getItem('perfusionScheduleEdits');
             const savedPublished = localStorage.getItem('perfusionPublishedSchedule');
             
-            if (savedEdits) {
-                editedScheduleData = JSON.parse(savedEdits);
-                console.log('Loaded saved edits from localStorage:', editedScheduleData.length, 'rows');
-            }
-            
-            // Check if we have published data
+            // Load published data first (highest priority)
             if (savedPublished) {
                 const publishedData = JSON.parse(savedPublished);
-                console.log('Found published schedule data from:', publishedData.timestamp);
+                console.log('Found published schedule data');
                 return publishedData;
+            }
+            
+            // Fall back to saved edits if no published data
+            if (savedEdits) {
+                editedScheduleData = JSON.parse(savedEdits);
+                console.log('Loaded saved edits from localStorage');
+                return { schedule: editedScheduleData, timestamp: new Date().toISOString() };
             }
         } catch (error) {
             console.error('Error loading saved data:', error);
@@ -919,8 +921,6 @@
         } else if (pageId === 'supervisorViewPage' && !supervisorViewCalendar) {
             initializeSupervisorViewCalendar();
         } else if (pageId === 'supervisorEditPage' && !supervisorEditCalendar) {
-            // Load saved data before initializing
-            loadSavedData();
             initializeSupervisorEditCalendar();
         } else if (pageId === 'publishedSchedulePage' && !publishedCalendar) {
             initializePublishedCalendar();
