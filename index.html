@@ -868,13 +868,13 @@
             
             if (savedEdits) {
                 editedScheduleData = JSON.parse(savedEdits);
-                console.log('Loaded saved edits from localStorage');
+                console.log('Loaded saved edits from localStorage:', editedScheduleData.length, 'rows');
             }
             
             // Check if we have published data
             if (savedPublished) {
                 const publishedData = JSON.parse(savedPublished);
-                console.log('Found published schedule data');
+                console.log('Found published schedule data from:', publishedData.timestamp);
                 return publishedData;
             }
         } catch (error) {
@@ -919,6 +919,8 @@
         } else if (pageId === 'supervisorViewPage' && !supervisorViewCalendar) {
             initializeSupervisorViewCalendar();
         } else if (pageId === 'supervisorEditPage' && !supervisorEditCalendar) {
+            // Load saved data before initializing
+            loadSavedData();
             initializeSupervisorEditCalendar();
         } else if (pageId === 'publishedSchedulePage' && !publishedCalendar) {
             initializePublishedCalendar();
