@@ -914,21 +914,23 @@
         }
     }
 
-    // Page Navigation with proper data loading
+    // Page Navigation
     function showPage(pageId) {
         const pages = document.querySelectorAll('.page');
         pages.forEach(page => page.classList.remove('active'));
         
         document.getElementById(pageId).classList.add('active');
         
-        // Load saved data first before initializing any calendar
-        const savedData = loadSavedData();
-        
         if (pageId === 'schedulePage' && !calendar) {
             initializeCalendar();
         } else if (pageId === 'supervisorViewPage' && !supervisorViewCalendar) {
             initializeSupervisorViewCalendar();
-        } else if (pageId === 'supervisorEditPage' && !supervisorEditCalendar) {
+        } else if (pageId === 'supervisorEditPage') {
+            // Always refresh the edit calendar to show latest published state
+            if (supervisorEditCalendar) {
+                supervisorEditCalendar.destroy();
+                supervisorEditCalendar = null;
+            }
             initializeSupervisorEditCalendar();
         } else if (pageId === 'publishedSchedulePage' && !publishedCalendar) {
             initializePublishedCalendar();
@@ -962,21 +964,13 @@
         }
     }
 
-    // Initialize page and load saved data on page load
+    // Allow Enter key to submit password
     document.addEventListener('DOMContentLoaded', function() {
-        // Load saved data immediately when page loads
-        const savedData = loadSavedData();
-        console.log('Page loaded, saved data:', savedData ? 'found' : 'not found');
-        
-        // Set up password input event listener
-        const passwordInput = document.getElementById('passwordInput');
-        if (passwordInput) {
-            passwordInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    checkPassword();
-                }
-            });
-        }
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
     });
 
     // Date functions
@@ -1431,11 +1425,16 @@
     function initializeSupervisorEditCalendarFromData() {
         const calendarEl = document.getElementById('supervisorEditCalendar');
         
-        // Make sure we have the latest saved data
-        const savedData = loadSavedData();
+        // Always load the latest published data before creating the calendar
+        const savedPublishedData = loadSavedData();
+        
+        if (savedPublishedData && savedPublishedData.schedule) {
+            // Use the published schedule as the starting point
+            editedScheduleData = JSON.parse(JSON.stringify(savedPublishedData.schedule));
+            console.log('Refreshing edit calendar with published data:', editedScheduleData.length, 'rows');
+        }
         
         const events = createEditableEvents(editedScheduleData);
-        console.log('Reinitializing supervisor edit calendar with', events.length, 'events');
 
         supervisorEditCalendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
@@ -1462,40 +1461,18 @@
     }
 
     function publishSchedule() {
-        // Save current edited data as published
-        savePublishedToStorage();
-        
-        // Update the published calendar if it exists
         if (publishedCalendar) {
+            // Destroy and recreate to avoid stacking
             publishedCalendar.destroy();
+            initializePublishedCalendarFromData();
+            
+            // Save to localStorage
+            savePublishedToStorage();
+            
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = `Last updated: ${now.toLocaleString()}`;
         }
         
-        // Reinitialize published calendar with current edited data
-        const calendarEl = document.getElementById('publishedCalendar');
-        const events = createEventsFromData(editedScheduleData);
-
-        publishedCalendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,dayGridWeek,dayGridDay'
-            },
-            showNonCurrentDates: false,
-            fixedWeekCount: false,
-            events: events,
-            eventContent: function(arg) {
-                return { html: arg.event.title };
-            }
-        });
-
-        publishedCalendar.render();
-        
-        // Update timestamp
-        const now = new Date();
-        document.getElementById('lastUpdated').textContent = `Last updated: ${now.toLocaleString()}`;
-        
-        console.log('Published schedule with', editedScheduleData.length, 'rows of data');
         alert('Schedule published successfully and saved!');
     }
 
