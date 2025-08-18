@@ -860,16 +860,18 @@
     let editedScheduleData = [];
     let currentEditDate = null;
 
-    // Load saved data on page load
+    // Load saved data on page load and set editedScheduleData
     function loadSavedData() {
         try {
-            const savedEdits = localStorage.getItem('perfusionScheduleEdits');
             const savedPublished = localStorage.getItem('perfusionPublishedSchedule');
+            const savedEdits = localStorage.getItem('perfusionScheduleEdits');
             
             // Load published data first (highest priority)
             if (savedPublished) {
                 const publishedData = JSON.parse(savedPublished);
-                console.log('Found published schedule data');
+                // Set editedScheduleData to the published schedule
+                editedScheduleData = JSON.parse(JSON.stringify(publishedData.schedule));
+                console.log('Loaded published schedule as editing baseline');
                 return publishedData;
             }
             
