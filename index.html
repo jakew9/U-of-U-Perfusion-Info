@@ -860,32 +860,33 @@
     let editedScheduleData = [];
     let currentEditDate = null;
 
-    // Load saved data on page load and set editedScheduleData properly
+    // Load saved data and return it (don't modify global variables here)
     function loadSavedData() {
         try {
             const savedPublished = localStorage.getItem('perfusionPublishedSchedule');
-            const savedEdits = localStorage.getItem('perfusionScheduleEdits');
             
-            // Load published data first (highest priority)
             if (savedPublished) {
                 const publishedData = JSON.parse(savedPublished);
-                console.log('Found published schedule data with', publishedData.schedule?.length || 0, 'rows');
-                // Also update editedScheduleData to the published schedule
-                if (publishedData.schedule) {
-                    editedScheduleData = JSON.parse(JSON.stringify(publishedData.schedule));
-                }
+                console.log('📋 Found published schedule in localStorage:', {
+                    hasSchedule: !!publishedData.schedule,
+                    scheduleLength: publishedData.schedule?.length || 0,
+                    timestamp: publishedData.timestamp
+                });
                 return publishedData;
+            } else {
+                console.log('❌ No published schedule found in localStorage');
             }
             
-            // Fall back to saved edits if no published data
+            const savedEdits = localStorage.getItem('perfusionScheduleEdits');
             if (savedEdits) {
                 const editsData = JSON.parse(savedEdits);
-                editedScheduleData = JSON.parse(JSON.stringify(editsData));
-                console.log('Loaded saved edits from localStorage with', editsData.length, 'rows');
+                console.log('📝 Found saved edits in localStorage:', editsData.length, 'rows');
                 return { schedule: editsData, timestamp: new Date().toISOString() };
+            } else {
+                console.log('❌ No saved edits found in localStorage');
             }
         } catch (error) {
-            console.error('Error loading saved data:', error);
+            console.error('❌ Error loading saved data:', error);
         }
         return null;
     }
