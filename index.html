@@ -860,7 +860,7 @@
     let editedScheduleData = [];
     let currentEditDate = null;
 
-    // Load saved data on page load and set editedScheduleData
+    // Load saved data on page load and set editedScheduleData properly
     function loadSavedData() {
         try {
             const savedPublished = localStorage.getItem('perfusionPublishedSchedule');
@@ -869,17 +869,20 @@
             // Load published data first (highest priority)
             if (savedPublished) {
                 const publishedData = JSON.parse(savedPublished);
-                // Set editedScheduleData to the published schedule
-                editedScheduleData = JSON.parse(JSON.stringify(publishedData.schedule));
-                console.log('Loaded published schedule as editing baseline');
+                console.log('Found published schedule data with', publishedData.schedule?.length || 0, 'rows');
+                // Also update editedScheduleData to the published schedule
+                if (publishedData.schedule) {
+                    editedScheduleData = JSON.parse(JSON.stringify(publishedData.schedule));
+                }
                 return publishedData;
             }
             
             // Fall back to saved edits if no published data
             if (savedEdits) {
-                editedScheduleData = JSON.parse(savedEdits);
-                console.log('Loaded saved edits from localStorage');
-                return { schedule: editedScheduleData, timestamp: new Date().toISOString() };
+                const editsData = JSON.parse(savedEdits);
+                editedScheduleData = JSON.parse(JSON.stringify(editsData));
+                console.log('Loaded saved edits from localStorage with', editsData.length, 'rows');
+                return { schedule: editsData, timestamp: new Date().toISOString() };
             }
         } catch (error) {
             console.error('Error loading saved data:', error);
