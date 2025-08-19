@@ -275,7 +275,7 @@ body {
  
 .fc-event, .fc-event-main {
     white-space: normal !important;
-    height: 100vh !important;
+    height: auto !important;
     line-height: 1.2 !important;
 }
  
@@ -633,4 +633,33 @@ body {
 .date-info {
     color: #666;
     margin-top: 0.5rem;
+}
+/* Full screen calendar container */
+#publishedCalendar, #supervisorViewCalendar, #supervisorEditCalendar {
+    height: calc(100vh - 120px); /* Full height minus header space */
+    max-width: 100%;
+    margin: 0;
+    padding: 10px;
+}
+
+/* Make the FullCalendar itself full height */
+.fc {
+    height: 100% !important;
+}
+
+/* Optional: Make the page container full width */
+.page {
+    padding: 10px;
+    max-width: 100%;
+}
+
+/* Optional: Reduce header padding for more calendar space */
+.page-header {
+    margin-bottom: 10px;
+    padding: 10px;
+}
+
+/* Make calendar days taller for better visibility */
+.fc-daygrid-day {
+    min-height: 120px;
 }
