@@ -226,20 +226,24 @@ body {
     display: none;
     min-height: 100vh;
     padding: 20px;
+    height: 100vh;
+    flex-direction: column;
+    padding: 5px;
 }
  
 .page.active {
-    display: block;
+    display: flex;
 }
  
 .page-header {
     display: flex;
     align-items: center;
-    margin-bottom: 2rem;
-    padding: 1rem;
+    margin-bottom: 10px;
+    padding: 10px;
     background: white;
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    flex-shrink: 0;
 }
  
 .back-button {
@@ -265,12 +269,15 @@ body {
  
 /* Calendar Styles */
 #calendar, #supervisorCalendar, #publishedCalendar, #supervisorViewCalendar, #supervisorEditCalendar {
-    max-width: 900px;
-    margin: 0 auto;
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    backdrop-filter: blur(10px);
+    height: calc(100vh - 280px);
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
 }
  
 .fc-event, .fc-event-main {
@@ -288,7 +295,30 @@ body {
 }
  
 .fc-daygrid-day-frame {
-    min-height: 100px;
+    min-height: 60px !important;
+}
+ 
+.fc-daygrid-day {
+    min-height: 60px !important;
+    padding: 2px !important;
+}
+
+.fc {
+    height: 100% !important;
+}
+
+.fc-header-toolbar {
+    margin-bottom: 5px !important;
+    font-size: 14px !important;
+}
+
+.fc-daygrid-day-number {
+    font-size: 12px !important;
+}
+
+.fc-col-header-cell {
+    font-size: 12px !important;
+    padding: 5px !important;
 }
  
 /* Weekend events should have no background */
@@ -300,10 +330,11 @@ body {
 /* Supervisor Page Styles */
 .supervisor-controls {
     background: white;
-    padding: 1rem;
-    margin-bottom: 1rem;
+    padding: 8px;
+    margin-bottom: 8px;
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    font-size: 14px;
 }
  
 .edit-instructions {
@@ -633,73 +664,4 @@ body {
 .date-info {
     color: #666;
     margin-top: 0.5rem;
-}
-/* Force calendar to fit screen - smaller version */
-#publishedCalendar, #supervisorViewCalendar, #supervisorEditCalendar {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 15px;
-    padding: 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    backdrop-filter: blur(10px);
-    height: calc(100vh - 280px); /* More space reserved for header */
-    overflow: hidden;
-}
-
-/* Force FullCalendar to use available height */
-.fc {
-    height: 100% !important;
-}
-
-/* Make calendar cells much smaller */
-.fc-daygrid-day {
-    min-height: 60px !important; /* Much smaller cells */
-    padding: 2px !important;
-}
-
-/* Reduce header size */
-.fc-header-toolbar {
-    margin-bottom: 5px !important;
-    font-size: 14px !important;
-}
-
-/* Smaller font for day numbers */
-.fc-daygrid-day-number {
-    font-size: 12px !important;
-}
-
-/* Smaller font for day headers */
-.fc-col-header-cell {
-    font-size: 12px !important;
-    padding: 5px !important;
-}
-
-/* Make the page use full height efficiently */
-.page {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    padding: 5px;
-}
-
-/* Smaller header */
-.page-header {
-    margin-bottom: 10px;
-    padding: 10px;
-    flex-shrink: 0;
-}
-
-/* Smaller instructions */
-.supervisor-controls {
-    padding: 8px;
-    margin-bottom: 8px;
-    font-size: 14px;
-}
-
-/* Make calendar container take remaining space */
-.calendar-container, 
-#publishedCalendar, 
-#supervisorViewCalendar, 
-#supervisorEditCalendar {
-    flex: 1;
-    min-height: 0;
 }
