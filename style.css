@@ -275,7 +275,7 @@ body {
  
 .fc-event, .fc-event-main {
     white-space: normal !important;
-    height: '100vh' !important;
+    height: 100vh !important;
     line-height: 1.2 !important;
 }
  
