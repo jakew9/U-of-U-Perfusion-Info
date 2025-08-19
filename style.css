@@ -634,43 +634,14 @@ body {
     color: #666;
     margin-top: 0.5rem;
 }
-/* Full screen calendar container */
-#publishedCalendar, #supervisorViewCalendar, #supervisorEditCalendar {
-    height: calc(100vh - 120px); /* Full height minus header space */
-    max-width: 100%;
-    margin: 0;
-    padding: 10px;
-}
-
-/* Make the FullCalendar itself full height */
-.fc {
-    height: 100% !important;
-}
-
-/* Optional: Make the page container full width */
-.page {
-    padding: 10px;
-    max-width: 100%;
-}
-
-/* Optional: Reduce header padding for more calendar space */
-.page-header {
-    margin-bottom: 10px;
-    padding: 10px;
-}
-
-/* Make calendar days taller for better visibility */
-.fc-daygrid-day {
-    min-height: 120px;
-}
-/* Make calendar containers fit screen height */
+/* Force calendar to fit screen - smaller version */
 #publishedCalendar, #supervisorViewCalendar, #supervisorEditCalendar {
     background: rgba(255, 255, 255, 0.95);
     border-radius: 15px;
-    padding: 15px;
+    padding: 10px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     backdrop-filter: blur(10px);
-    height: calc(100vh - 200px); /* Adjust this value to fit better */
+    height: calc(100vh - 280px); /* More space reserved for header */
     overflow: hidden;
 }
 
@@ -679,14 +650,27 @@ body {
     height: 100% !important;
 }
 
-/* Make calendar cells smaller to fit */
+/* Make calendar cells much smaller */
 .fc-daygrid-day {
-    min-height: 80px !important; /* Smaller cells */
+    min-height: 60px !important; /* Much smaller cells */
+    padding: 2px !important;
 }
 
-/* Reduce calendar header size */
+/* Reduce header size */
 .fc-header-toolbar {
-    margin-bottom: 10px !important;
+    margin-bottom: 5px !important;
+    font-size: 14px !important;
+}
+
+/* Smaller font for day numbers */
+.fc-daygrid-day-number {
+    font-size: 12px !important;
+}
+
+/* Smaller font for day headers */
+.fc-col-header-cell {
+    font-size: 12px !important;
+    padding: 5px !important;
 }
 
 /* Make the page use full height efficiently */
@@ -694,27 +678,28 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    padding: 10px;
+    padding: 5px;
 }
 
-/* Reduce header height */
+/* Smaller header */
 .page-header {
-    margin-bottom: 15px;
-    padding: 15px;
-    flex-shrink: 0; /* Don't let header shrink */
+    margin-bottom: 10px;
+    padding: 10px;
+    flex-shrink: 0;
 }
 
-/* Make calendar container flexible */
+/* Smaller instructions */
+.supervisor-controls {
+    padding: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+/* Make calendar container take remaining space */
 .calendar-container, 
 #publishedCalendar, 
 #supervisorViewCalendar, 
 #supervisorEditCalendar {
-    flex: 1; /* Take remaining space */
-    min-height: 0; /* Allow shrinking */
-}
-
-/* Make instructions section smaller */
-.supervisor-controls {
-    padding: 10px;
-    margin-bottom: 10px;
+    flex: 1;
+    min-height: 0;
 }
