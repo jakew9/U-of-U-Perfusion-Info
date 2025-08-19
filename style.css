@@ -663,3 +663,58 @@ body {
 .fc-daygrid-day {
     min-height: 120px;
 }
+/* Make calendar containers fit screen height */
+#publishedCalendar, #supervisorViewCalendar, #supervisorEditCalendar {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    backdrop-filter: blur(10px);
+    height: calc(100vh - 200px); /* Adjust this value to fit better */
+    overflow: hidden;
+}
+
+/* Force FullCalendar to use available height */
+.fc {
+    height: 100% !important;
+}
+
+/* Make calendar cells smaller to fit */
+.fc-daygrid-day {
+    min-height: 80px !important; /* Smaller cells */
+}
+
+/* Reduce calendar header size */
+.fc-header-toolbar {
+    margin-bottom: 10px !important;
+}
+
+/* Make the page use full height efficiently */
+.page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+/* Reduce header height */
+.page-header {
+    margin-bottom: 15px;
+    padding: 15px;
+    flex-shrink: 0; /* Don't let header shrink */
+}
+
+/* Make calendar container flexible */
+.calendar-container, 
+#publishedCalendar, 
+#supervisorViewCalendar, 
+#supervisorEditCalendar {
+    flex: 1; /* Take remaining space */
+    min-height: 0; /* Allow shrinking */
+}
+
+/* Make instructions section smaller */
+.supervisor-controls {
+    padding: 10px;
+    margin-bottom: 10px;
+}
