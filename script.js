@@ -592,14 +592,14 @@ function getScheduleHistory() {
         });
     }
     
-    // Get previous versions from history (if we store them)
+    // Get previous versions from history
     const previousVersions = localStorage.getItem('perfusionScheduleHistory');
     if (previousVersions) {
         const versions = JSON.parse(previousVersions);
         versions.forEach((version, index) => {
             history.push({
                 type: 'previous',
-                title: `Schedule Update #${versions.length - index}`,
+                title: `Previous Schedule #${index + 1}`,
                 date: new Date(version.timestamp).toLocaleDateString(),
                 time: new Date(version.timestamp).toLocaleTimeString(),
                 data: version.schedule,
@@ -608,18 +608,21 @@ function getScheduleHistory() {
         });
     }
     
-    // If no history, create a sample previous version
+    // Create sample previous schedules if none exist (for demo purposes)
     if (history.length === 1) {
-        const sampleDate = new Date();
-        sampleDate.setDate(sampleDate.getDate() - 7);
-        history.push({
-            type: 'previous',
-            title: 'Previous Schedule',
-            date: sampleDate.toLocaleDateString(),
-            time: sampleDate.toLocaleTimeString(),
-            data: history[0].data, // Same data for demo
-            timestamp: sampleDate.toISOString()
-        });
+        // Create 2 sample previous versions
+        for (let i = 1; i <= 2; i++) {
+            const sampleDate = new Date();
+            sampleDate.setDate(sampleDate.getDate() - (i * 7));
+            history.push({
+                type: 'previous',
+                title: `Previous Schedule #${i}`,
+                date: sampleDate.toLocaleDateString(),
+                time: sampleDate.toLocaleTimeString(),
+                data: history[0].data, // Same data as current for demo
+                timestamp: sampleDate.toISOString()
+            });
+        }
     }
     
     return history;
@@ -678,18 +681,28 @@ function createMiniCalendar(containerId, data) {
     calendar.render();
 }
 
-function toggleSchedule(index) {
+// Make toggleSchedule globally accessible
+window.toggleSchedule = function(index) {
     const content = document.getElementById(`schedule-content-${index}`);
-    const button = content.nextElementSibling;
+    const button = content?.nextElementSibling;
+    
+    if (!content || !button) {
+        console.error('Could not find schedule content or button for index:', index);
+        return;
+    }
     
     if (content.classList.contains('collapsed')) {
         content.classList.remove('collapsed');
-        button.textContent = 'Collapse';
+        content.style.maxHeight = 'none';
+        button.textContent = 'Collapse View';
+        button.style.background = '#dc3545';
     } else {
         content.classList.add('collapsed');
+        content.style.maxHeight = '60px';
         button.textContent = 'View This Version';
+        button.style.background = '#667eea';
     }
-}
+};
 
 function initializePublishedCalendarFromData() {
     const calendarEl = document.getElementById('publishedCalendar');
