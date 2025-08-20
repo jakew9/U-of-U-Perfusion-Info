@@ -157,6 +157,9 @@ function saveEdit() {
     const nightShift = document.getElementById('nightShiftInput').value.trim();
     const selectedColor = document.querySelector('input[name="backgroundColor"]:checked').value;
     
+    // Store the current date being viewed before destroying calendar
+    const currentViewDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
+    
     // Parse the date correctly
     const [year, month, day] = currentEditDate.split('-').map(Number);
     const targetDate = new Date(year, month - 1, day); // month is 0-indexed
@@ -189,7 +192,7 @@ function saveEdit() {
     
     // Completely refresh the supervisor calendar to avoid stacking
     supervisorEditCalendar.destroy();
-    initializeSupervisorEditCalendarFromData();
+    initializeSupervisorEditCalendarFromData(currentViewDate); // Pass the current view date
     
     // Save edits automatically
     saveEditsToStorage();
@@ -597,12 +600,13 @@ function initializeSupervisorEditCalendar() {
         });
 }
 
-function initializeSupervisorEditCalendarFromData() {
+function initializeSupervisorEditCalendarFromData(preserveDate = null) {
     const calendarEl = document.getElementById('supervisorEditCalendar');
     const events = createEditableEvents(editedScheduleData);
 
     supervisorEditCalendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
+        initialDate: preserveDate || new Date(), // Use preserved date or default to current
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
