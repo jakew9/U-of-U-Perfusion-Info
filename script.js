@@ -198,19 +198,52 @@ function saveEdit() {
 }
 
 function publishSchedule() {
-    if (publishedCalendar) {
-        // Destroy and recreate to avoid stacking
-        publishedCalendar.destroy();
-        initializePublishedCalendarFromData();
-        
-        // Save to localStorage
-        savePublishedToStorage();
-        
-        const now = new Date();
-        document.getElementById('lastUpdated').textContent = `Last updated: ${now.toLocaleString()}`;
+    // Save current published schedule to history before updating
+    const currentPublished = localStorage.getItem('perfusionPublishedSchedule');
+    if (currentPublished) {
+        saveToHistory(JSON.parse(currentPublished));
     }
     
-    alert('Schedule published successfully and saved!');
+    // Save new published schedule
+    savePublishedToStorage();
+    
+    // Recreate the schedule stack
+    const calendarEl = document.getElementById('publishedCalendar');
+    if (calendarEl) {
+        createScheduleStack(calendarEl);
+    }
+    
+    // Update last modified time in header
+    const now = new Date();
+    const lastUpdatedElement = document.getElementById('lastUpdated');
+    if (lastUpdatedElement) {
+        lastUpdatedElement.textContent = `Last updated: ${now.toLocaleString()}`;
+    }
+    
+    alert('Schedule published successfully! Previous version saved to history.');
+}
+
+function saveToHistory(publishedData) {
+    try {
+        let history = [];
+        const existingHistory = localStorage.getItem('perfusionScheduleHistory');
+        if (existingHistory) {
+            history = JSON.parse(existingHistory);
+        }
+        
+        // Add current published schedule to history
+        history.unshift(publishedData); // Add to beginning
+        
+        // Keep only last 5 versions
+        if (history.length > 5) {
+            history = history.slice(0, 5);
+        }
+        
+        localStorage.setItem('perfusionScheduleHistory', JSON.stringify(history));
+        console.log('Saved to schedule history');
+    } catch (error) {
+        console.error('Error saving to history:', error);
+    }
 }
 
 // --- Helper Functions ---
@@ -525,88 +558,136 @@ function initializeSupervisorEditCalendarFromData() {
 function initializePublishedCalendar() {
     const calendarEl = document.getElementById('publishedCalendar');
     
-    // Check for saved published data first
-    const savedPublishedData = loadSavedData();
+    // Create the schedule stack instead of a single calendar
+    createScheduleStack(calendarEl);
+}
+
+function createScheduleStack(container) {
+    // Get all schedule versions from localStorage
+    const scheduleHistory = getScheduleHistory();
     
-    if (savedPublishedData && savedPublishedData.schedule) {
-        // Use saved published data
-        const events = createEventsFromData(savedPublishedData.schedule);
-        
-        publishedCalendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,dayGridWeek,dayGridDay'
-            },
-            showNonCurrentDates: false,
-            fixedWeekCount: false,
-            events: events,
-            eventContent: function(arg) {
-                return { html: arg.event.title };
-            }
+    container.innerHTML = '<div class="schedule-stack"></div>';
+    const stackContainer = container.querySelector('.schedule-stack');
+    
+    scheduleHistory.forEach((schedule, index) => {
+        const paper = createSchedulePaper(schedule, index);
+        stackContainer.appendChild(paper);
+    });
+}
+
+function getScheduleHistory() {
+    const history = [];
+    
+    // Get current published schedule
+    const published = localStorage.getItem('perfusionPublishedSchedule');
+    if (published) {
+        const publishedData = JSON.parse(published);
+        history.push({
+            type: 'current',
+            title: 'Current Published Schedule',
+            date: new Date(publishedData.timestamp).toLocaleDateString(),
+            time: new Date(publishedData.timestamp).toLocaleTimeString(),
+            data: publishedData.schedule,
+            timestamp: publishedData.timestamp
         });
-
-        publishedCalendar.render();
-        
-        // Update last updated time
-        const lastUpdated = new Date(savedPublishedData.timestamp).toLocaleString();
-        document.getElementById('lastUpdated').textContent = `Last updated: ${lastUpdated}`;
-        
-    } else if (editedScheduleData.length > 0) {
-        // Use edited data if it exists
-        const events = createEventsFromData(editedScheduleData);
-
-        publishedCalendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,dayGridWeek,dayGridDay'
-            },
-            showNonCurrentDates: false,
-            fixedWeekCount: false,
-            events: events,
-            eventContent: function(arg) {
-                return { html: arg.event.title };
-            }
-        });
-
-        publishedCalendar.render();
-    } else {
-        // Fetch original data if no saved data exists
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                const values = data.values || [];
-                const events = createEventsFromData(values);
-
-                publishedCalendar = new FullCalendar.Calendar(calendarEl, {
-                    initialView: 'dayGridMonth',
-                    headerToolbar: {
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,dayGridWeek,dayGridDay'
-                    },
-                    showNonCurrentDates: false,
-                    fixedWeekCount: false,
-                    events: events,
-                    eventContent: function(arg) {
-                        return { html: arg.event.title };
-                    }
-                });
-
-                publishedCalendar.render();
-            })
-            .catch(error => {
-                console.error('Error fetching data: ', error);
-                calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
+    }
+    
+    // Get previous versions from history (if we store them)
+    const previousVersions = localStorage.getItem('perfusionScheduleHistory');
+    if (previousVersions) {
+        const versions = JSON.parse(previousVersions);
+        versions.forEach((version, index) => {
+            history.push({
+                type: 'previous',
+                title: `Schedule Update #${versions.length - index}`,
+                date: new Date(version.timestamp).toLocaleDateString(),
+                time: new Date(version.timestamp).toLocaleTimeString(),
+                data: version.schedule,
+                timestamp: version.timestamp
             });
+        });
+    }
+    
+    // If no history, create a sample previous version
+    if (history.length === 1) {
+        const sampleDate = new Date();
+        sampleDate.setDate(sampleDate.getDate() - 7);
+        history.push({
+            type: 'previous',
+            title: 'Previous Schedule',
+            date: sampleDate.toLocaleDateString(),
+            time: sampleDate.toLocaleTimeString(),
+            data: history[0].data, // Same data for demo
+            timestamp: sampleDate.toISOString()
+        });
+    }
+    
+    return history;
+}
+
+function createSchedulePaper(schedule, index) {
+    const paper = document.createElement('div');
+    paper.className = `schedule-paper ${index === 0 ? 'current' : `previous-${index}`}`;
+    
+    const isCurrent = schedule.type === 'current';
+    
+    paper.innerHTML = `
+        <div class="schedule-header ${isCurrent ? '' : 'previous'}">
+            <div>
+                <h3 class="schedule-title">${schedule.title}</h3>
+                <div class="schedule-date">${schedule.date} at ${schedule.time}</div>
+            </div>
+            <span class="status-badge ${isCurrent ? 'status-current' : 'status-previous'}">
+                ${isCurrent ? 'Current' : 'Previous'}
+            </span>
+        </div>
+        <div class="schedule-content ${index > 0 ? 'collapsed' : ''}" id="schedule-content-${index}">
+            <div id="calendar-${index}"></div>
+        </div>
+        ${index > 0 ? `<button class="expand-button" onclick="toggleSchedule(${index})">View This Version</button>` : ''}
+    `;
+    
+    // Create mini calendar for this schedule version
+    setTimeout(() => {
+        createMiniCalendar(`calendar-${index}`, schedule.data);
+    }, 100);
+    
+    return paper;
+}
+
+function createMiniCalendar(containerId, data) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const events = createEventsFromData(data || []);
+    
+    const calendar = new FullCalendar.Calendar(container, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next',
+            center: 'title',
+            right: 'today'
+        },
+        height: 'auto',
+        events: events,
+        eventContent: function(arg) {
+            return { html: arg.event.title };
+        }
+    });
+    
+    calendar.render();
+}
+
+function toggleSchedule(index) {
+    const content = document.getElementById(`schedule-content-${index}`);
+    const button = content.nextElementSibling;
+    
+    if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        button.textContent = 'Collapse';
+    } else {
+        content.classList.add('collapsed');
+        button.textContent = 'View This Version';
     }
 }
 
