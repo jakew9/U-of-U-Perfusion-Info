@@ -686,28 +686,75 @@ body {
     flex-shrink: 0;
 }
 
-.version-info h2 {
-    margin: 0 0 8px 0;
-    font-size: 1.8em;
-    font-weight: 600;
-}
-
-.version-meta {
-    margin: 0 0 4px 0;
-    font-size: 0.9em;
-    opacity: 0.9;
-}
-
-.version-number {
-    margin: 0;
-    font-size: 0.85em;
-    opacity: 0.8;
-    font-weight: 500;
+.version-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
 }
 
 .version-navigation {
     display: flex;
     gap: 10px;
+}
+
+.version-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.delete-btn {
+    padding: 8px 15px;
+    background: rgba(220, 53, 69, 0.2);
+    color: white;
+    border: 1px solid rgba(220, 53, 69, 0.5);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85em;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.delete-btn:hover:not(:disabled) {
+    background: rgba(220, 53, 69, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2);
+}
+
+.delete-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(108, 117, 125, 0.2);
+    border-color: rgba(108, 117, 125, 0.3);
+}
+
+/* Responsive adjustments for version controls */
+@media (max-width: 768px) {
+    .version-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .version-controls {
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .version-navigation {
+        justify-content: center;
+    }
+    
+    .nav-btn, .delete-btn {
+        padding: 8px 16px;
+        font-size: 0.8em;
+    }
 }
 
 .nav-btn {
@@ -858,22 +905,23 @@ body {
     color: white;
 }
 
-/* Responsive Version Navigation */
-@media (max-width: 768px) {
-    .version-header {
-        flex-direction: column;
-        gap: 15px;
-        text-align: center;
-    }
-    
-    .version-navigation {
-        justify-content: center;
-    }
-    
-    .nav-btn {
-        padding: 8px 16px;
-        font-size: 0.8em;
-    }
+.version-info h2 {
+    margin: 0 0 8px 0;
+    font-size: 1.8em;
+    font-weight: 600;
+}
+
+.version-meta {
+    margin: 0 0 4px 0;
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.version-number {
+    margin: 0;
+    font-size: 0.85em;
+    opacity: 0.8;
+    font-weight: 500;
 }
 
 .content-card {
