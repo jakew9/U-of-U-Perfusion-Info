@@ -7,7 +7,6 @@ let calendar;
 let supervisorViewCalendar;
 let supervisorEditCalendar;
 let publishedCalendar;
-let previousCalendar; // ADDED: Calendar for previous version
 let originalScheduleData = [];
 let editedScheduleData = [];
 let currentEditDate = null;
@@ -68,72 +67,6 @@ function savePublishedToStorage() {
     }
 }
 
-// ADDED: Version Management Functions
-function getVersionNumber() {
-    try {
-        const history = localStorage.getItem('perfusionScheduleHistory');
-        if (history) {
-            const versions = JSON.parse(history);
-            return versions.length + 1;
-        }
-    } catch (error) {
-        console.error('Error getting version number:', error);
-    }
-    return 1;
-}
-
-function updatePreviousVersionButton() {
-    const previousBtn = document.getElementById('previousVersionBtn');
-    const versionNumber = document.getElementById('previousVersionNumber');
-    
-    try {
-        const history = localStorage.getItem('perfusionScheduleHistory');
-        if (history) {
-            const versions = JSON.parse(history);
-            if (versions.length > 0) {
-                const lastVersion = versions[0]; // Most recent previous version
-                previousBtn.style.display = 'flex';
-                versionNumber.textContent = `V${versions.length}`;
-            } else {
-                previousBtn.style.display = 'none';
-            }
-        } else {
-            previousBtn.style.display = 'none';
-        }
-    } catch (error) {
-        console.error('Error updating previous version button:', error);
-        previousBtn.style.display = 'none';
-    }
-}
-
-function showPreviousVersion() {
-    try {
-        const history = localStorage.getItem('perfusionScheduleHistory');
-        if (history) {
-            const versions = JSON.parse(history);
-            if (versions.length > 0) {
-                const previousVersion = versions[0]; // Most recent previous version
-                
-                // Update page title
-                const versionNum = versions.length;
-                document.getElementById('previousSchedulePageTitle').textContent = 
-                    `Previous Schedule - Version ${versionNum}`;
-                
-                // Update timestamp
-                const timestamp = new Date(previousVersion.timestamp);
-                document.getElementById('previousLastUpdated').textContent = 
-                    `Published: ${timestamp.toLocaleString()}`;
-                
-                // Show the previous schedule page
-                showPage('previousSchedulePage');
-            }
-        }
-    } catch (error) {
-        console.error('Error showing previous version:', error);
-        alert('Error loading previous version');
-    }
-}
-
 // --- Page and Modal Management ---
 
 // Page Navigation
@@ -151,9 +84,6 @@ function showPage(pageId) {
         initializeSupervisorEditCalendar();
     } else if (pageId === 'publishedSchedulePage' && !publishedCalendar) {
         initializePublishedCalendar();
-        updatePreviousVersionButton(); // ADDED: Update button when showing published page
-    } else if (pageId === 'previousSchedulePage' && !previousCalendar) {
-        initializePreviousCalendar(); // ADDED: Initialize previous calendar
     }
 }
 
@@ -268,33 +198,82 @@ function saveEdit() {
 }
 
 function publishSchedule() {
-    // MODIFIED: Save current published schedule to history before updating
-    const currentPublished = localStorage.getItem('perfusionPublishedSchedule');
-    if (currentPublished) {
-        saveToHistory(JSON.parse(currentPublished));
-    }
+    // Capture the current calendar as an image snapshot
+    captureCalendarSnapshot().then(snapshotData => {
+        // Save current published schedule to history before updating
+        const currentPublished = localStorage.getItem('perfusionPublishedSchedule');
+        if (currentPublished) {
+            saveToHistory(JSON.parse(currentPublished));
+        }
+        
+        // Create new published data with snapshot
+        const publishedData = {
+            schedule: editedScheduleData,
+            timestamp: new Date().toISOString(),
+            snapshot: snapshotData,
+            month: getCurrentMonthName(),
+            year: new Date().getFullYear()
+        };
+        
+        // Save new published schedule with snapshot
+        localStorage.setItem('perfusionPublishedSchedule', JSON.stringify(publishedData));
+        
+        // Recreate the schedule stack with snapshots
+        const calendarEl = document.getElementById('publishedCalendar');
+        if (calendarEl) {
+            createScheduleStack(calendarEl);
+        }
+        
+        // Update last modified time in header
+        const now = new Date();
+        const lastUpdatedElement = document.getElementById('lastUpdated');
+        if (lastUpdatedElement) {
+            lastUpdatedElement.textContent = `Last updated: ${now.toLocaleString()}`;
+        }
+        
+        alert(`${getCurrentMonthName()} schedule snapshot saved successfully!`);
+    });
+}
+
+function captureCalendarSnapshot() {
+    return new Promise((resolve) => {
+        // Get the current calendar element
+        const calendarEl = document.getElementById('supervisorEditCalendar');
+        if (!calendarEl) {
+            resolve(null);
+            return;
+        }
+        
+        // Create a clean calendar snapshot
+        const snapshotData = createCalendarSnapshot(editedScheduleData);
+        resolve(snapshotData);
+    });
+}
+
+function createCalendarSnapshot(data) {
+    // Create a simplified calendar representation
+    const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
     
-    // Create new published data
-    const publishedData = {
-        schedule: editedScheduleData,
-        timestamp: new Date().toISOString(),
-        version: getVersionNumber()
+    // Get events for the current month
+    const events = createEventsFromData(data || []);
+    const monthEvents = events.filter(event => {
+        const eventDate = new Date(event.start);
+        return eventDate.getFullYear() === year && eventDate.getMonth() === month;
+    });
+    
+    return {
+        month: getCurrentMonthName(),
+        year: year,
+        events: monthEvents,
+        capturedAt: new Date().toISOString()
     };
-    
-    // Save new published schedule
-    localStorage.setItem('perfusionPublishedSchedule', JSON.stringify(publishedData));
-    
-    // Update last modified time in header
-    const now = new Date();
-    const lastUpdatedElement = document.getElementById('lastUpdated');
-    if (lastUpdatedElement) {
-        lastUpdatedElement.textContent = `Last updated: ${now.toLocaleString()}`;
-    }
-    
-    // Update the previous version button
-    updatePreviousVersionButton();
-    
-    alert(`Schedule published successfully as Version ${publishedData.version}!`);
+}
+
+function getCurrentMonthName() {
+    const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
+    return currentDate.toLocaleDateString('en-US', { month: 'long' });
 }
 
 function saveToHistory(publishedData) {
@@ -480,6 +459,80 @@ function initializeCalendar() {
         })
         .then(data => {
             const values = data.values;
+            const events = createEventsFromData(values || []);
+
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
+                },
+                showNonCurrentDates: false,
+                fixedWeekCount: false,
+                events: events,
+                eventContent: function(arg) {
+                    return { html: arg.event.title };
+                }
+            });
+
+            calendar.render();
+        })
+        .catch(error => {
+            console.error('Error fetching data: ', error);
+            calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
+        });
+}
+
+function initializeSupervisorViewCalendar() {
+    const calendarEl = document.getElementById('supervisorViewCalendar');
+
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const values = data.values;
+            const events = createEventsFromData(values || []);
+
+            supervisorViewCalendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
+                },
+                showNonCurrentDates: false,
+                fixedWeekCount: false,
+                events: events,
+                eventContent: function(arg) {
+                    return { html: arg.event.title };
+                }
+            });
+
+            supervisorViewCalendar.render();
+        })
+        .catch(error => {
+            console.error('Error fetching data: ', error);
+            calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
+        });
+}
+
+function initializeSupervisorEditCalendar() {
+    const calendarEl = document.getElementById('supervisorEditCalendar');
+
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const values = data.values;
             originalScheduleData = values || [];
             
             // Load saved data and set editedScheduleData properly
@@ -560,47 +613,6 @@ function initializePublishedCalendar() {
     
     // Create the schedule stack instead of a single calendar
     createScheduleStack(calendarEl);
-}
-
-// ADDED: Initialize Previous Calendar Function
-function initializePreviousCalendar() {
-    const calendarEl = document.getElementById('previousCalendar');
-    
-    try {
-        const history = localStorage.getItem('perfusionScheduleHistory');
-        if (history) {
-            const versions = JSON.parse(history);
-            if (versions.length > 0) {
-                const previousVersion = versions[0]; // Most recent previous version
-                const events = createEventsFromData(previousVersion.schedule || []);
-
-                previousCalendar = new FullCalendar.Calendar(calendarEl, {
-                    initialView: 'dayGridMonth',
-                    headerToolbar: {
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,dayGridWeek,dayGridDay'
-                    },
-                    showNonCurrentDates: false,
-                    fixedWeekCount: false,
-                    events: events,
-                    eventContent: function(arg) {
-                        return { html: arg.event.title };
-                    }
-                });
-
-                previousCalendar.render();
-                return;
-            }
-        }
-        
-        // If no previous version found, show message
-        calendarEl.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No previous version available</p>';
-        
-    } catch (error) {
-        console.error('Error initializing previous calendar:', error);
-        calendarEl.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">Error loading previous version</p>';
-    }
 }
 
 function createScheduleStack(container) {
@@ -889,77 +901,3 @@ function initializePublishedCalendarFromData() {
 
     publishedCalendar.render();
 }
-        .then(data => {
-            const values = data.values;
-            const events = createEventsFromData(values || []);
-
-            calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
-                },
-                showNonCurrentDates: false,
-                fixedWeekCount: false,
-                events: events,
-                eventContent: function(arg) {
-                    return { html: arg.event.title };
-                }
-            });
-
-            calendar.render();
-        })
-        .catch(error => {
-            console.error('Error fetching data: ', error);
-            calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
-        });
-}
-
-function initializeSupervisorViewCalendar() {
-    const calendarEl = document.getElementById('supervisorViewCalendar');
-
-    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            const values = data.values;
-            const events = createEventsFromData(values || []);
-
-            supervisorViewCalendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
-                },
-                showNonCurrentDates: false,
-                fixedWeekCount: false,
-                events: events,
-                eventContent: function(arg) {
-                    return { html: arg.event.title };
-                }
-            });
-
-            supervisorViewCalendar.render();
-        })
-        .catch(error => {
-            console.error('Error fetching data: ', error);
-            calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
-        });
-}
-
-function initializeSupervisorEditCalendar() {
-    const calendarEl = document.getElementById('supervisorEditCalendar');
-
-    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
