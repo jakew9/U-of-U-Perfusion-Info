@@ -101,7 +101,7 @@ function closePasswordModal() {
 
 function checkPassword() {
     const password = document.getElementById('passwordInput').value;
-    const correctPassword = 'chris';
+    const correctPassword = 'CHRIS';
     
     if (password === correctPassword) {
         closePasswordModal();
@@ -634,21 +634,39 @@ function createSchedulePaper(schedule, index) {
     
     const isCurrent = schedule.type === 'current';
     
-    paper.innerHTML = `
-        <div class="schedule-header ${isCurrent ? '' : 'previous'}">
-            <div>
-                <h3 class="schedule-title">${schedule.title}</h3>
-                <div class="schedule-date">${schedule.date} at ${schedule.time}</div>
+    if (isCurrent) {
+        // Current schedule - full paper
+        paper.innerHTML = `
+            <div class="schedule-header">
+                <div>
+                    <h3 class="schedule-title">${schedule.title}</h3>
+                    <div class="schedule-date">${schedule.date} at ${schedule.time}</div>
+                </div>
+                <span class="status-badge status-current">Current</span>
             </div>
-            <span class="status-badge ${isCurrent ? 'status-current' : 'status-previous'}">
-                ${isCurrent ? 'Current' : 'Previous'}
-            </span>
-        </div>
-        <div class="schedule-content ${index > 0 ? 'collapsed' : ''}" id="schedule-content-${index}">
-            <div id="calendar-${index}"></div>
-        </div>
-        ${index > 0 ? `<button class="expand-button" onclick="toggleSchedule(${index})">View This Version</button>` : ''}
-    `;
+            <div class="schedule-content" id="schedule-content-${index}">
+                <div id="calendar-${index}"></div>
+            </div>
+        `;
+    } else {
+        // Previous schedule - just a tab and hidden content
+        paper.innerHTML = `
+            <div class="schedule-tab" onclick="toggleSchedule(${index})">
+                ${schedule.date}<br>${schedule.time}
+            </div>
+            <div class="schedule-header previous" style="display: none;">
+                <div>
+                    <h3 class="schedule-title">${schedule.title}</h3>
+                    <div class="schedule-date">${schedule.date} at ${schedule.time}</div>
+                </div>
+                <span class="status-badge status-previous">Previous</span>
+            </div>
+            <div class="schedule-content collapsed" id="schedule-content-${index}" style="display: none;">
+                <div id="calendar-${index}"></div>
+            </div>
+            <button class="expand-button" onclick="toggleSchedule(${index})" style="display: none;">Collapse View</button>
+        `;
+    }
     
     // Create mini calendar for this schedule version
     setTimeout(() => {
@@ -684,28 +702,31 @@ function createMiniCalendar(containerId, data) {
 // Make toggleSchedule globally accessible
 window.toggleSchedule = function(index) {
     console.log('Toggling schedule:', index);
-    const content = document.getElementById(`schedule-content-${index}`);
-    const button = content?.parentElement.querySelector('.expand-button');
+    const paper = document.querySelector(`.schedule-paper.previous-${index}`);
+    const tab = paper?.querySelector('.schedule-tab');
+    const header = paper?.querySelector('.schedule-header');
+    const content = paper?.querySelector('.schedule-content');
+    const button = paper?.querySelector('.expand-button');
     
-    if (!content || !button) {
-        console.error('Could not find schedule content or button for index:', index);
+    if (!paper || !content) {
+        console.error('Could not find schedule elements for index:', index);
         return;
     }
     
-    if (content.classList.contains('collapsed')) {
-        // Expand
-        content.classList.remove('collapsed');
-        content.style.maxHeight = '600px';
-        content.style.overflow = 'auto';
-        button.textContent = 'Collapse View';
-        button.classList.add('expanded');
+    if (paper.classList.contains('previous-expanded')) {
+        // Collapse back to tab
+        paper.classList.remove('previous-expanded');
+        tab.style.display = 'block';
+        header.style.display = 'none';
+        content.style.display = 'none';
+        button.style.display = 'none';
     } else {
-        // Collapse
-        content.classList.add('collapsed');
-        content.style.maxHeight = '80px';
-        content.style.overflow = 'hidden';
-        button.textContent = 'View This Version';
-        button.classList.remove('expanded');
+        // Expand to full view
+        paper.classList.add('previous-expanded');
+        tab.style.display = 'none';
+        header.style.display = 'flex';
+        content.style.display = 'block';
+        button.style.display = 'block';
     }
 };
 
