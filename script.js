@@ -1,248 +1,163 @@
-// Global variables
-let currentScheduleData = [];
-let previousScheduleData = [];
-let scheduleVersions = [];
-let currentVersion = 1;
-let editingEvent = null;
-let calendars = {};
+// Configuration
+const apiKey = 'AIzaSyCyCEmSvunsn8C82AwhSyX5joXy2hstPls';
+const spreadsheetId = '1pKNJK3nvpcwQor1obQm1V6qiWfwOPmImV361Qfqul8E';
+const range = 'Sheet2!A13:V54'; // Extended to include column V to ensure we get columns S and T 
 
-// Password for supervisor access
-const SUPERVISOR_PASSWORD = "perfusion2024";
+let calendar;
+let supervisorViewCalendar;
+let supervisorEditCalendar;
+let publishedCalendar;
+let previousCalendar; // ADDED: Calendar for previous version
+let originalScheduleData = [];
+let editedScheduleData = [];
+let currentEditDate = null;
 
-// Sample schedule data
-const sampleScheduleData = [
-    {
-        id: 'day-1', title: 'Day: GB/HB/JR/JR\nNight: CB/JW', 
-        start: '2025-09-02', color: '#B22222', 
-        dayShift: 'GB/HB/JR/JR', nightShift: 'CB/JW'
-    },
-    {
-        id: 'school-1', title: 'School: JH', 
-        start: '2025-09-02', color: '#4169E1',
-        dayShift: '', nightShift: '', isSchool: true, schoolPerson: 'JH'
-    },
-    {
-        id: 'day-2', title: 'Day: HB/JR/JR/TR/JW\nNight: JCB', 
-        start: '2025-09-03', color: '#32CD32',
-        dayShift: 'HB/JR/JR/TR/JW', nightShift: 'JCB'
-    },
-    {
-        id: 'school-2', title: 'School: GB', 
-        start: '2025-09-03', color: '#4169E1',
-        dayShift: '', nightShift: '', isSchool: true, schoolPerson: 'GB'
-    },
-    {
-        id: 'off-1', title: 'Off: JH/CB', 
-        start: '2025-09-03', color: '#DC143C',
-        dayShift: '', nightShift: '', isOff: true, offPeople: 'JH/CB'
-    },
-    {
-        id: 'day-3', title: 'Day: KB/JR/TR/JCB\nNight: HB/GB', 
-        start: '2025-09-04', color: '#20B2AA',
-        dayShift: 'KB/JR/TR/JCB', nightShift: 'HB/GB'
-    },
-    {
-        id: 'school-3', title: 'School: JW', 
-        start: '2025-09-04', color: '#4169E1',
-        dayShift: '', nightShift: '', isSchool: true, schoolPerson: 'JW'
-    },
-    {
-        id: 'off-2', title: 'Off: MI', 
-        start: '2025-09-05', color: '#DC143C',
-        dayShift: '', nightShift: '', isOff: true, offPeople: 'MI'
-    },
-    {
-        id: 'school-4', title: 'School: JR', 
-        start: '2025-09-05', color: '#4169E1',
-        dayShift: '', nightShift: '', isSchool: true, schoolPerson: 'JR'
+// --- Data Management Functions ---
+
+// Load saved data on page load and set editedScheduleData properly
+function loadSavedData() {
+    try {
+        const savedPublished = localStorage.getItem('perfusionPublishedSchedule');
+        const savedEdits = localStorage.getItem('perfusionScheduleEdits');
+        
+        // Load published data first (highest priority)
+        if (savedPublished) {
+            const publishedData = JSON.parse(savedPublished);
+            console.log('Found published schedule data with', publishedData.schedule?.length || 0, 'rows');
+            // Also update editedScheduleData to the published schedule
+            if (publishedData.schedule) {
+                editedScheduleData = JSON.parse(JSON.stringify(publishedData.schedule));
+            }
+            return publishedData;
+        }
+        
+        // Fall back to saved edits if no published data
+        if (savedEdits) {
+            const editsData = JSON.parse(savedEdits);
+            editedScheduleData = JSON.parse(JSON.stringify(editsData));
+            console.log('Loaded saved edits from localStorage with', editsData.length, 'rows');
+            return { schedule: editsData, timestamp: new Date().toISOString() };
+        }
+    } catch (error) {
+        console.error('Error loading saved data:', error);
     }
-];
+    return null;
+}
 
-// Initialize the application
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize with sample data
-    currentScheduleData = [...sampleScheduleData];
-    
-    // Create initial version
-    scheduleVersions.push({
-        version: 1,
-        data: [...currentScheduleData],
-        publishedDate: new Date(),
-        title: "September 2025 - Version 1"
-    });
-    
-    updateVersionInfo();
-    updateLastUpdated();
-});
+// Save edits to localStorage
+function saveEditsToStorage() {
+    try {
+        localStorage.setItem('perfusionScheduleEdits', JSON.stringify(editedScheduleData));
+        console.log('Saved edits to localStorage');
+    } catch (error) {
+        console.error('Error saving edits:', error);
+    }
+}
 
-// Page navigation
+// Save published schedule to localStorage
+function savePublishedToStorage() {
+    try {
+        const publishedData = {
+            schedule: editedScheduleData,
+            timestamp: new Date().toISOString()
+        };
+        localStorage.setItem('perfusionPublishedSchedule', JSON.stringify(publishedData));
+        console.log('Saved published schedule to localStorage');
+    } catch (error) {
+        console.error('Error saving published schedule:', error);
+    }
+}
+
+// ADDED: Version Management Functions
+function getVersionNumber() {
+    try {
+        const history = localStorage.getItem('perfusionScheduleHistory');
+        if (history) {
+            const versions = JSON.parse(history);
+            return versions.length + 1;
+        }
+    } catch (error) {
+        console.error('Error getting version number:', error);
+    }
+    return 1;
+}
+
+function updatePreviousVersionButton() {
+    const previousBtn = document.getElementById('previousVersionBtn');
+    const versionNumber = document.getElementById('previousVersionNumber');
+    
+    try {
+        const history = localStorage.getItem('perfusionScheduleHistory');
+        if (history) {
+            const versions = JSON.parse(history);
+            if (versions.length > 0) {
+                const lastVersion = versions[0]; // Most recent previous version
+                previousBtn.style.display = 'flex';
+                versionNumber.textContent = `V${versions.length}`;
+            } else {
+                previousBtn.style.display = 'none';
+            }
+        } else {
+            previousBtn.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error updating previous version button:', error);
+        previousBtn.style.display = 'none';
+    }
+}
+
+function showPreviousVersion() {
+    try {
+        const history = localStorage.getItem('perfusionScheduleHistory');
+        if (history) {
+            const versions = JSON.parse(history);
+            if (versions.length > 0) {
+                const previousVersion = versions[0]; // Most recent previous version
+                
+                // Update page title
+                const versionNum = versions.length;
+                document.getElementById('previousSchedulePageTitle').textContent = 
+                    `Previous Schedule - Version ${versionNum}`;
+                
+                // Update timestamp
+                const timestamp = new Date(previousVersion.timestamp);
+                document.getElementById('previousLastUpdated').textContent = 
+                    `Published: ${timestamp.toLocaleString()}`;
+                
+                // Show the previous schedule page
+                showPage('previousSchedulePage');
+            }
+        }
+    } catch (error) {
+        console.error('Error showing previous version:', error);
+        alert('Error loading previous version');
+    }
+}
+
+// --- Page and Modal Management ---
+
+// Page Navigation
 function showPage(pageId) {
-    // Hide all pages
-    document.querySelectorAll('.page').forEach(page => {
-        page.classList.remove('active');
-    });
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(page => page.classList.remove('active'));
     
-    // Show selected page
     document.getElementById(pageId).classList.add('active');
     
-    // Initialize calendar for the page
-    setTimeout(() => {
-        initializeCalendarForPage(pageId);
-    }, 100);
-}
-
-// Initialize calendar based on page
-function initializeCalendarForPage(pageId) {
-    switch(pageId) {
-        case 'publishedSchedulePage':
-            initializePublishedCalendar();
-            break;
-        case 'supervisorViewPage':
-            initializeSupervisorViewCalendar();
-            break;
-        case 'supervisorEditPage':
-            initializeSupervisorEditCalendar();
-            break;
-        case 'previousSchedulePage':
-            initializePreviousCalendar();
-            break;
+    if (pageId === 'schedulePage' && !calendar) {
+        initializeCalendar();
+    } else if (pageId === 'supervisorViewPage' && !supervisorViewCalendar) {
+        initializeSupervisorViewCalendar();
+    } else if (pageId === 'supervisorEditPage' && !supervisorEditCalendar) {
+        initializeSupervisorEditCalendar();
+    } else if (pageId === 'publishedSchedulePage' && !publishedCalendar) {
+        initializePublishedCalendar();
+        updatePreviousVersionButton(); // ADDED: Update button when showing published page
+    } else if (pageId === 'previousSchedulePage' && !previousCalendar) {
+        initializePreviousCalendar(); // ADDED: Initialize previous calendar
     }
 }
 
-// Initialize published calendar (read-only)
-function initializePublishedCalendar() {
-    const calendarEl = document.getElementById('publishedCalendar');
-    
-    if (calendars.published) {
-        calendars.published.destroy();
-    }
-    
-    calendars.published = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        initialDate: '2025-09-01',
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth'
-        },
-        events: currentScheduleData,
-        eventDidMount: function(info) {
-            // Make weekend events transparent
-            const date = new Date(info.event.start);
-            if (date.getDay() === 0 || date.getDay() === 6) {
-                info.el.classList.add('weekend-event');
-            }
-        },
-        height: 'auto'
-    });
-    
-    calendars.published.render();
-}
-
-// Initialize supervisor view calendar (read-only)
-function initializeSupervisorViewCalendar() {
-    const calendarEl = document.getElementById('supervisorViewCalendar');
-    
-    if (calendars.supervisorView) {
-        calendars.supervisorView.destroy();
-    }
-    
-    calendars.supervisorView = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        initialDate: '2025-09-01',
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth'
-        },
-        events: currentScheduleData,
-        eventDidMount: function(info) {
-            const date = new Date(info.event.start);
-            if (date.getDay() === 0 || date.getDay() === 6) {
-                info.el.classList.add('weekend-event');
-            }
-        },
-        height: 'auto'
-    });
-    
-    calendars.supervisorView.render();
-}
-
-// Initialize supervisor edit calendar (editable)
-function initializeSupervisorEditCalendar() {
-    const calendarEl = document.getElementById('supervisorEditCalendar');
-    
-    if (calendars.supervisorEdit) {
-        calendars.supervisorEdit.destroy();
-    }
-    
-    calendars.supervisorEdit = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        initialDate: '2025-09-01',
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth'
-        },
-        events: currentScheduleData,
-        eventDidMount: function(info) {
-            const date = new Date(info.event.start);
-            if (date.getDay() === 0 || date.getDay() === 6) {
-                info.el.classList.add('weekend-event');
-            } else {
-                info.el.classList.add('editable');
-            }
-        },
-        eventClick: function(info) {
-            // Only allow editing non-weekend events
-            const date = new Date(info.event.start);
-            if (date.getDay() !== 0 && date.getDay() !== 6) {
-                openEditModal(info.event);
-            }
-        },
-        dateClick: function(info) {
-            // Allow creating new events on empty dates
-            const date = new Date(info.date);
-            if (date.getDay() !== 0 && date.getDay() !== 6) {
-                openEditModal(null, info.date);
-            }
-        },
-        height: 'auto'
-    });
-    
-    calendars.supervisorEdit.render();
-}
-
-// Initialize previous calendar
-function initializePreviousCalendar() {
-    const calendarEl = document.getElementById('previousCalendar');
-    
-    if (calendars.previous) {
-        calendars.previous.destroy();
-    }
-    
-    calendars.previous = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        initialDate: '2025-09-01',
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth'
-        },
-        events: previousScheduleData,
-        eventDidMount: function(info) {
-            const date = new Date(info.event.start);
-            if (date.getDay() === 0 || date.getDay() === 6) {
-                info.el.classList.add('weekend-event');
-            }
-        },
-        height: 'auto'
-    });
-    
-    calendars.previous.render();
-}
-
-// Password modal functions
+// Password protection for edit access
 function requestEditAccess() {
     document.getElementById('passwordModal').style.display = 'block';
     document.getElementById('passwordInput').focus();
@@ -256,194 +171,795 @@ function closePasswordModal() {
 
 function checkPassword() {
     const password = document.getElementById('passwordInput').value;
-    if (password === SUPERVISOR_PASSWORD) {
+    const correctPassword = 'CHRIS';
+    
+    if (password === correctPassword) {
         closePasswordModal();
         showPage('supervisorEditPage');
     } else {
-        document.getElementById('passwordError').textContent = 'Incorrect password';
+        document.getElementById('passwordError').textContent = 'Incorrect password. Please try again.';
         document.getElementById('passwordError').style.display = 'block';
+        document.getElementById('passwordInput').value = '';
+        document.getElementById('passwordInput').focus();
     }
 }
 
+// Allow Enter key to submit password
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            checkPassword();
+        }
+    });
+});
+
 // Edit modal functions
-function openEditModal(event, date) {
-    editingEvent = event;
-    const modal = document.getElementById('editModal');
-    const title = document.getElementById('editModalTitle');
-    const dayShiftInput = document.getElementById('dayShiftInput');
-    const nightShiftInput = document.getElementById('nightShiftInput');
+function openEditModal(dateStr, dayShift, nightShift) {
+    currentEditDate = dateStr;
+    document.getElementById('editModalTitle').textContent = `Edit Schedule for ${dateStr}`;
+    document.getElementById('dayShiftInput').value = dayShift || '';
+    document.getElementById('nightShiftInput').value = nightShift || '';
     
-    if (event) {
-        title.textContent = `Edit Schedule for ${event.startStr}`;
-        dayShiftInput.value = event.extendedProps.dayShift || '';
-        nightShiftInput.value = event.extendedProps.nightShift || '';
-        
-        // Set color selection
-        const colorRadios = document.querySelectorAll('input[name="backgroundColor"]');
-        colorRadios.forEach(radio => {
-            radio.checked = radio.value === event.backgroundColor;
-        });
-    } else {
-        title.textContent = `Add Schedule for ${date}`;
-        dayShiftInput.value = '';
-        nightShiftInput.value = '';
-        document.querySelector('input[name="backgroundColor"][value="auto"]').checked = true;
+    // Reset color selection to auto
+    document.querySelector('input[name="backgroundColor"][value="auto"]').checked = true;
+    
+    // Check if this date has a custom color stored at index 20
+    const existingRow = editedScheduleData.find(row => parseDate(row[0]) === dateStr);
+    if (existingRow && existingRow[20] && existingRow[20].startsWith('#')) {
+        const colorOption = document.querySelector(`input[name="backgroundColor"][value="${existingRow[20]}"]`);
+        if (colorOption) {
+            colorOption.checked = true;
+        }
     }
     
-    modal.style.display = 'block';
+    document.getElementById('editModal').style.display = 'block';
 }
 
 function closeEditModal() {
     document.getElementById('editModal').style.display = 'none';
-    editingEvent = null;
+    currentEditDate = null;
 }
 
 function saveEdit() {
-    const dayShift = document.getElementById('dayShiftInput').value;
-    const nightShift = document.getElementById('nightShiftInput').value;
+    if (!currentEditDate) return;
+    
+    const dayShift = document.getElementById('dayShiftInput').value.trim();
+    const nightShift = document.getElementById('nightShiftInput').value.trim();
     const selectedColor = document.querySelector('input[name="backgroundColor"]:checked').value;
     
-    let backgroundColor = selectedColor;
-    if (selectedColor === 'auto') {
-        backgroundColor = determineAutoColor(dayShift, nightShift);
-    }
+    // Parse the date correctly
+    const [year, month, day] = currentEditDate.split('-').map(Number);
+    const targetDate = new Date(year, month - 1, day); // month is 0-indexed
+    let rowFound = false;
     
-    const title = buildEventTitle(dayShift, nightShift);
-    
-    if (editingEvent) {
-        // Update existing event
-        editingEvent.setProp('title', title);
-        editingEvent.setProp('backgroundColor', backgroundColor);
-        editingEvent.setExtendedProp('dayShift', dayShift);
-        editingEvent.setExtendedProp('nightShift', nightShift);
-        
-        // Update in data array
-        const dataEvent = currentScheduleData.find(e => e.id === editingEvent.id);
-        if (dataEvent) {
-            dataEvent.title = title;
-            dataEvent.color = backgroundColor;
-            dataEvent.dayShift = dayShift;
-            dataEvent.nightShift = nightShift;
+    editedScheduleData.forEach(row => {
+        if (row[0]) {
+            const rowDate = parseDate(row[0]);
+            if (rowDate === currentEditDate) {
+                row[16] = dayShift;
+                row[17] = nightShift;
+                // Ensure row is long enough and store custom color at index 20
+                while (row.length <= 20) {
+                    row.push('');
+                }
+                row[20] = selectedColor === 'auto' ? '' : selectedColor; // Store custom color at index 20
+                rowFound = true;
+            }
         }
-    } else {
-        // Create new event
-        const newEvent = {
-            id: 'new-' + Date.now(),
-            title: title,
-            start: editingEvent ? editingEvent.startStr : document.getElementById('editModalTitle').textContent.split(' ').pop(),
-            color: backgroundColor,
-            dayShift: dayShift,
-            nightShift: nightShift
-        };
-        
-        currentScheduleData.push(newEvent);
-        calendars.supervisorEdit.addEvent(newEvent);
+    });
+    
+    if (!rowFound) {
+        const newRow = new Array(21).fill(''); // Create array with 21 elements
+        newRow[0] = currentEditDate;
+        newRow[16] = dayShift;
+        newRow[17] = nightShift;
+        newRow[20] = selectedColor === 'auto' ? '' : selectedColor;
+        editedScheduleData.push(newRow);
     }
+    
+    // Completely refresh the supervisor calendar to avoid stacking
+    supervisorEditCalendar.destroy();
+    initializeSupervisorEditCalendarFromData();
+    
+    // Save edits automatically
+    saveEditsToStorage();
     
     closeEditModal();
 }
 
-// Helper functions
-function buildEventTitle(dayShift, nightShift) {
-    let title = '';
-    if (dayShift) title += `Day: ${dayShift}`;
-    if (nightShift) {
-        if (title) title += '\n';
-        title += `Night: ${nightShift}`;
-    }
-    return title;
-}
-
-function determineAutoColor(dayShift, nightShift) {
-    const dayCount = dayShift ? dayShift.split('/').length : 0;
-    const nightCount = nightShift ? nightShift.split('/').length : 0;
-    const totalStaff = dayCount + nightCount;
-    
-    if (totalStaff >= 6) return '#228B22'; // Green - well staffed
-    if (totalStaff >= 4) return '#DAA520'; // Gold - adequately staffed
-    return '#B22222'; // Red - understaffed
-}
-
 function publishSchedule() {
-    // Save current schedule as previous version
-    if (scheduleVersions.length > 0) {
-        previousScheduleData = [...scheduleVersions[scheduleVersions.length - 1].data];
+    // MODIFIED: Save current published schedule to history before updating
+    const currentPublished = localStorage.getItem('perfusionPublishedSchedule');
+    if (currentPublished) {
+        saveToHistory(JSON.parse(currentPublished));
     }
     
-    // Create new version
-    currentVersion++;
-    scheduleVersions.push({
-        version: currentVersion,
-        data: [...currentScheduleData],
-        publishedDate: new Date(),
-        title: `September 2025 - Version ${currentVersion}`
+    // Create new published data
+    const publishedData = {
+        schedule: editedScheduleData,
+        timestamp: new Date().toISOString(),
+        version: getVersionNumber()
+    };
+    
+    // Save new published schedule
+    localStorage.setItem('perfusionPublishedSchedule', JSON.stringify(publishedData));
+    
+    // Update last modified time in header
+    const now = new Date();
+    const lastUpdatedElement = document.getElementById('lastUpdated');
+    if (lastUpdatedElement) {
+        lastUpdatedElement.textContent = `Last updated: ${now.toLocaleString()}`;
+    }
+    
+    // Update the previous version button
+    updatePreviousVersionButton();
+    
+    alert(`Schedule published successfully as Version ${publishedData.version}!`);
+}
+
+function saveToHistory(publishedData) {
+    try {
+        let history = [];
+        const existingHistory = localStorage.getItem('perfusionScheduleHistory');
+        if (existingHistory) {
+            history = JSON.parse(existingHistory);
+        }
+        
+        // Add current published schedule to history
+        history.unshift(publishedData); // Add to beginning
+        
+        // Keep only last 5 versions
+        if (history.length > 5) {
+            history = history.slice(0, 5);
+        }
+        
+        localStorage.setItem('perfusionScheduleHistory', JSON.stringify(history));
+        console.log('Saved to schedule history');
+    } catch (error) {
+        console.error('Error saving to history:', error);
+    }
+}
+
+// --- Helper Functions ---
+
+// Date functions
+function parseDate(dateString) {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function getCorrectDayOfWeek(dateString) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.getDay();
+}
+
+// Event creation functions
+function createEventsFromData(data) {
+    const events = [];
+    
+    data.forEach(row => {
+        const date = row[0];        
+        const dayShiftData = row[16];   
+        const nightShiftData = row[17];
+        const schoolData = row[18];     // Column S (index 18) - School assignments only
+        const offData = row[19];        // Column T (index 19) - People requesting off
+        // Check if there's a custom color stored beyond the normal data range
+        const customColor = row.length > 20 ? row[20] : ''; // Use index 20 for custom color to avoid conflicts
+        
+        const formattedDate = parseDate(date);
+        
+        // DEBUG: Log the data for troubleshooting
+        if (formattedDate === '2025-09-03') {
+            console.log(`FULL ROW DATA for Sep 3:`, row);
+            console.log(`Row length: ${row.length}`);
+            console.log(`Index 18 (School): "${row[18]}"`);
+            console.log(`Index 19 (Off): "${row[19]}"`);
+        }
+        console.log(`Date: ${formattedDate}, Day: ${dayShiftData}, Night: ${nightShiftData}, School: ${schoolData}, Off: ${offData}`);
+        
+        if (formattedDate) {
+            const dayOfWeek = getCorrectDayOfWeek(formattedDate);
+            let titleHTML = '';
+
+            // Add Day shift
+            if (dayShiftData && dayShiftData.trim()) {
+                titleHTML += `<div>Day: ${dayShiftData.trim()}</div>`;
+            }
+            
+            // Add Night shift
+            if (nightShiftData && nightShiftData.trim()) {
+                titleHTML += `<div>Night: ${nightShiftData.trim()}</div>`;
+            }
+            
+            // Add blank line before Off/School section (if there's either Off or School data)
+            if ((offData && offData.trim()) || (schoolData && schoolData.trim())) {
+                titleHTML += `<div><br></div>`;
+            }
+            
+            // Add Off data
+            if (offData && offData.trim()) {
+                titleHTML += `<div style="color:#FFFFFF; background-color:#FF0000; padding:1px 2px; border-radius:2px; font-weight:bold;">Off: ${offData.trim()}</div>`;
+            }
+            
+            // Add School assignments
+            if (schoolData && schoolData.trim()) {
+                titleHTML += `<div style="color:#FFFFFF; background-color:#0066CC; padding:1px 2px; border-radius:2px; font-weight:bold;">School: ${schoolData.trim()}</div>`;
+            }
+
+            if (titleHTML) {
+                const eventData = {
+                    title: titleHTML,
+                    start: formattedDate,
+                    allDay: true
+                };
+                
+                // Debug: log color decisions
+                console.log(`Date: ${formattedDate}, Custom Color: ${customColor}, Day of Week: ${dayOfWeek}`);
+                
+                // Check for custom color first (only if it's a valid color, not employee initials)
+                if (customColor && customColor.startsWith('#')) {
+                    eventData.backgroundColor = customColor;
+                    eventData.borderColor = customColor;
+                    eventData.textColor = '#ffffff';
+                    console.log(`Applied custom color: ${customColor}`);
+                } else if (dayOfWeek === 0 || dayOfWeek === 6) {
+                    // Weekend styling
+                    eventData.backgroundColor = 'transparent';
+                    eventData.borderColor = 'transparent';
+                    eventData.textColor = '#000000';
+                    eventData.classNames = ['weekend-event'];
+                    console.log('Applied weekend styling');
+                } else {
+                    // Weekday automatic color coding
+                    const allShifts = [dayShiftData, nightShiftData].filter(Boolean).join('/');
+                    const employees = allShifts.split('/').filter(initial => initial.trim() !== '');
+                    const employeeCount = employees.length;
+
+                    if (employeeCount >= 6) {
+                        eventData.backgroundColor = '#FFFFFF';
+                        eventData.borderColor = '#FFFFFF';
+                        eventData.textColor = '#000000'; 
+                    } else if (employeeCount === 5) {
+                        eventData.backgroundColor = '#228B22';
+                        eventData.borderColor = '#228B22';
+                        eventData.textColor = '#ffffff';
+                    } else if (employeeCount <= 4) {
+                        eventData.backgroundColor = '#B22222';
+                        eventData.borderColor = '#B22222';
+                        eventData.textColor = '#ffffff';
+                    }
+                    console.log(`Applied auto color for ${employeeCount} employees: ${eventData.backgroundColor}`);
+                }
+                
+                events.push(eventData);
+            }
+        }
     });
     
-    updateVersionInfo();
-    updateLastUpdated();
-    
-    alert('Schedule published successfully!');
-    showPage('publishedSchedulePage');
+    return events;
 }
 
-function showPreviousVersion() {
-    if (scheduleVersions.length > 1) {
-        const previousVersion = scheduleVersions[scheduleVersions.length - 2];
-        previousScheduleData = [...previousVersion.data];
+function createEditableEvents(data) {
+    const events = createEventsFromData(data);
+    
+    // Add extended props and editable class
+    events.forEach(event => {
+        const dateRow = data.find(row => parseDate(row[0]) === event.start);
+        if (dateRow) {
+            event.extendedProps = {
+                dayShift: dateRow[16] || '',
+                nightShift: dateRow[17] || '',
+                school: dateRow[18] || '',     // Column S
+                off: dateRow[19] || '',        // Column T
+                customColor: dateRow[20] || ''
+            };
+        }
+        event.classNames = event.classNames || [];
+        event.classNames.push('editable');
+    });
+    
+    return events;
+}
+
+// --- Calendar Initialization Functions ---
+
+function initializeCalendar() {
+    const calendarEl = document.getElementById('calendar');
+
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const values = data.values;
+            originalScheduleData = values || [];
+            
+            // Load saved data and set editedScheduleData properly
+            const savedPublishedData = loadSavedData();
+            
+            if (savedPublishedData && savedPublishedData.schedule) {
+                // Use the published schedule as the starting point
+                editedScheduleData = JSON.parse(JSON.stringify(savedPublishedData.schedule));
+                console.log('Loaded published schedule for editing:', editedScheduleData.length, 'rows');
+            } else {
+                // Fall back to original data if no saved data
+                editedScheduleData = JSON.parse(JSON.stringify(originalScheduleData));
+                console.log('Using original Google Sheets data:', editedScheduleData.length, 'rows');
+            }
+            
+            const events = createEditableEvents(editedScheduleData);
+            console.log('Created', events.length, 'events for supervisor edit calendar');
+
+            supervisorEditCalendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
+                },
+                showNonCurrentDates: false,
+                fixedWeekCount: false,
+                events: events,
+                eventContent: function(arg) {
+                    return { html: arg.event.title };
+                },
+                eventClick: function(info) {
+                    openEditModal(info.event.startStr, info.event.extendedProps.dayShift, info.event.extendedProps.nightShift);
+                },
+                dateClick: function(info) {
+                    openEditModal(info.dateStr, '', '');
+                }
+            });
+
+            supervisorEditCalendar.render();
+        })
+        .catch(error => {
+            console.error('Error fetching data: ', error);
+            calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
+        });
+}
+
+function initializeSupervisorEditCalendarFromData() {
+    const calendarEl = document.getElementById('supervisorEditCalendar');
+    const events = createEditableEvents(editedScheduleData);
+
+    supervisorEditCalendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,dayGridWeek,dayGridDay'
+        },
+        showNonCurrentDates: false,
+        fixedWeekCount: false,
+        events: events,
+        eventContent: function(arg) {
+            return { html: arg.event.title };
+        },
+        eventClick: function(info) {
+            openEditModal(info.event.startStr, info.event.extendedProps.dayShift, info.event.extendedProps.nightShift);
+        },
+        dateClick: function(info) {
+            openEditModal(info.dateStr, '', '');
+        }
+    });
+
+    supervisorEditCalendar.render();
+}
+
+function initializePublishedCalendar() {
+    const calendarEl = document.getElementById('publishedCalendar');
+    
+    // Create the schedule stack instead of a single calendar
+    createScheduleStack(calendarEl);
+}
+
+// ADDED: Initialize Previous Calendar Function
+function initializePreviousCalendar() {
+    const calendarEl = document.getElementById('previousCalendar');
+    
+    try {
+        const history = localStorage.getItem('perfusionScheduleHistory');
+        if (history) {
+            const versions = JSON.parse(history);
+            if (versions.length > 0) {
+                const previousVersion = versions[0]; // Most recent previous version
+                const events = createEventsFromData(previousVersion.schedule || []);
+
+                previousCalendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,dayGridWeek,dayGridDay'
+                    },
+                    showNonCurrentDates: false,
+                    fixedWeekCount: false,
+                    events: events,
+                    eventContent: function(arg) {
+                        return { html: arg.event.title };
+                    }
+                });
+
+                previousCalendar.render();
+                return;
+            }
+        }
         
-        // Update previous schedule page info
-        document.getElementById('previousSchedulePageTitle').textContent = `Previous Schedule - Version ${previousVersion.version}`;
-        document.getElementById('previousScheduleTitle').textContent = previousVersion.title;
-        document.getElementById('previousScheduleDate').textContent = previousVersion.publishedDate.toLocaleDateString();
-        document.getElementById('previousLastUpdated').textContent = `Published: ${previousVersion.publishedDate.toLocaleString()}`;
+        // If no previous version found, show message
+        calendarEl.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No previous version available</p>';
         
-        showPage('previousSchedulePage');
+    } catch (error) {
+        console.error('Error initializing previous calendar:', error);
+        calendarEl.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">Error loading previous version</p>';
     }
 }
 
-function updateVersionInfo() {
-    const previousBtn = document.getElementById('previousVersionBtn');
-    const versionNumber = document.getElementById('previousVersionNumber');
+function createScheduleStack(container) {
+    // Get all schedule versions from localStorage
+    const scheduleHistory = getScheduleHistory();
     
-    if (scheduleVersions.length > 1) {
-        const previousVersion = scheduleVersions[scheduleVersions.length - 2];
-        previousBtn.disabled = false;
-        versionNumber.textContent = `V${previousVersion.version}`;
-    } else {
-        previousBtn.disabled = true;
-        versionNumber.textContent = `V1`;
+    container.innerHTML = '<div class="schedule-stack"></div>';
+    const stackContainer = container.querySelector('.schedule-stack');
+    
+    scheduleHistory.forEach((schedule, index) => {
+        const paper = createSchedulePaper(schedule, index);
+        stackContainer.appendChild(paper);
+    });
+}
+
+function getScheduleHistory() {
+    const history = [];
+    
+    // Get current published schedule
+    const published = localStorage.getItem('perfusionPublishedSchedule');
+    if (published) {
+        const publishedData = JSON.parse(published);
+        history.push({
+            type: 'current',
+            title: `${publishedData.month || 'Current'} ${publishedData.year || new Date().getFullYear()} Schedule`,
+            date: new Date(publishedData.timestamp).toLocaleDateString(),
+            time: new Date(publishedData.timestamp).toLocaleTimeString(),
+            snapshot: publishedData.snapshot || null,
+            month: publishedData.month || 'Current',
+            timestamp: publishedData.timestamp
+        });
     }
     
-    // Update current schedule info
-    const currentVersionInfo = scheduleVersions[scheduleVersions.length - 1];
-    document.getElementById('currentScheduleTitle').textContent = currentVersionInfo.title;
-    document.getElementById('currentScheduleDate').textContent = currentVersionInfo.publishedDate.toLocaleDateString();
-}
-
-function updateLastUpdated() {
-    const lastUpdated = scheduleVersions[scheduleVersions.length - 1].publishedDate;
-    document.getElementById('lastUpdated').textContent = `Last updated: ${lastUpdated.toLocaleString()}`;
-}
-
-// Handle enter key in password field
-document.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        const passwordModal = document.getElementById('passwordModal');
-        if (passwordModal.style.display === 'block') {
-            checkPassword();
+    // Get previous versions from history
+    const previousVersions = localStorage.getItem('perfusionScheduleHistory');
+    if (previousVersions) {
+        const versions = JSON.parse(previousVersions);
+        versions.forEach((version, index) => {
+            history.push({
+                type: 'previous',
+                title: `${version.month || 'Previous'} ${version.year || new Date().getFullYear()} - Version ${index + 1}`,
+                date: new Date(version.timestamp).toLocaleDateString(),
+                time: new Date(version.timestamp).toLocaleTimeString(),
+                snapshot: version.snapshot || null,
+                month: version.month || `Previous #${index + 1}`,
+                timestamp: version.timestamp
+            });
+        });
+    }
+    
+    // Create sample previous schedules if none exist (for demo purposes)
+    if (history.length === 1) {
+        // Create 2 sample previous versions
+        for (let i = 1; i <= 2; i++) {
+            const sampleDate = new Date();
+            sampleDate.setDate(sampleDate.getDate() - (i * 7));
+            history.push({
+                type: 'previous',
+                title: `September 2025 - Version ${i}`,
+                date: sampleDate.toLocaleDateString(),
+                time: sampleDate.toLocaleTimeString(),
+                snapshot: createSampleSnapshot(),
+                month: 'September',
+                timestamp: sampleDate.toISOString()
+            });
         }
     }
-});
-
-// Close modals when clicking outside
-window.addEventListener('click', function(e) {
-    const passwordModal = document.getElementById('passwordModal');
-    const editModal = document.getElementById('editModal');
     
-    if (e.target === passwordModal) {
-        closePasswordModal();
+    return history;
+}
+
+function createSampleSnapshot() {
+    return {
+        month: 'September',
+        year: 2025,
+        events: [],
+        capturedAt: new Date().toISOString()
+    };
+}
+
+function createSchedulePaper(schedule, index) {
+    const paper = document.createElement('div');
+    paper.className = `schedule-paper ${index === 0 ? 'current' : `previous-${index}`}`;
+    
+    const isCurrent = schedule.type === 'current';
+    
+    if (isCurrent) {
+        // Current schedule - show snapshot
+        paper.innerHTML = `
+            <div class="schedule-header">
+                <div>
+                    <h3 class="schedule-title">${schedule.title}</h3>
+                    <div class="schedule-date">${schedule.date} at ${schedule.time}</div>
+                </div>
+                <span class="status-badge status-current">Current</span>
+            </div>
+            <div class="schedule-content" id="schedule-content-${index}">
+                <div id="snapshot-${index}" class="calendar-snapshot"></div>
+            </div>
+        `;
+    } else {
+        // Previous schedule - just a tab and hidden snapshot
+        const shortDate = new Date(schedule.timestamp).toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric' 
+        });
+        const shortTime = new Date(schedule.timestamp).toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+        });
+        
+        paper.innerHTML = `
+            <div class="schedule-tab" onclick="toggleSchedule(${index})">
+                ${schedule.month}<br>${shortDate}<br>${shortTime}
+            </div>
+            <div class="schedule-header previous" style="display: none;">
+                <div>
+                    <h3 class="schedule-title">${schedule.title}</h3>
+                    <div class="schedule-date">${schedule.date} at ${schedule.time}</div>
+                </div>
+                <span class="status-badge status-previous">Previous</span>
+            </div>
+            <div class="schedule-content collapsed" id="schedule-content-${index}" style="display: none;">
+                <div id="snapshot-${index}" class="calendar-snapshot"></div>
+            </div>
+        `;
     }
-    if (e.target === editModal) {
-        closeEditModal();
+    
+    // Create snapshot view instead of live calendar
+    setTimeout(() => {
+        createSnapshotView(`snapshot-${index}`, schedule.snapshot);
+    }, 100);
+    
+    return paper;
+}
+
+function createSnapshotView(containerId, snapshotData) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    if (!snapshotData || !snapshotData.events || snapshotData.events.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No calendar data available</p>';
+        return;
     }
-});
+    
+    // Create a full calendar view from the snapshot
+    container.innerHTML = `
+        <div class="snapshot-calendar-header">
+            <h2>${snapshotData.month} ${snapshotData.year}</h2>
+        </div>
+        <div class="snapshot-calendar-grid" id="grid-${containerId}">
+            <!-- Calendar grid will be generated here -->
+        </div>
+    `;
+    
+    // Generate the actual calendar grid
+    generateFullCalendarGrid(`grid-${containerId}`, snapshotData);
+}
+
+function generateFullCalendarGrid(gridId, snapshotData) {
+    const grid = document.getElementById(gridId);
+    if (!grid) return;
+    
+    const events = snapshotData.events || [];
+    const year = snapshotData.year || new Date().getFullYear();
+    const monthIndex = new Date(`${snapshotData.month} 1, ${year}`).getMonth();
+    
+    // Create event map by date
+    const eventsByDate = {};
+    events.forEach(event => {
+        const date = event.start;
+        if (!eventsByDate[date]) {
+            eventsByDate[date] = [];
+        }
+        eventsByDate[date].push(event);
+    });
+    
+    // Generate calendar grid
+    const firstDay = new Date(year, monthIndex, 1);
+    const lastDay = new Date(year, monthIndex + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start from Sunday
+    
+    let calendarHTML = `
+        <div class="calendar-grid">
+            <div class="calendar-header">
+                <div class="day-header">Sun</div>
+                <div class="day-header">Mon</div>
+                <div class="day-header">Tue</div>
+                <div class="day-header">Wed</div>
+                <div class="day-header">Thu</div>
+                <div class="day-header">Fri</div>
+                <div class="day-header">Sat</div>
+            </div>
+            <div class="calendar-body">
+    `;
+    
+    // Generate 6 weeks of calendar
+    for (let week = 0; week < 6; week++) {
+        for (let day = 0; day < 7; day++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + (week * 7) + day);
+            
+            const dateStr = currentDate.toISOString().split('T')[0];
+            const isCurrentMonth = currentDate.getMonth() === monthIndex;
+            const dayEvents = eventsByDate[dateStr] || [];
+            
+            calendarHTML += `
+                <div class="calendar-day ${!isCurrentMonth ? 'other-month' : ''}">
+                    <div class="day-number">${currentDate.getDate()}</div>
+                    <div class="day-events">
+                        ${dayEvents.map(event => `
+                            <div class="event-content" style="background-color: ${event.backgroundColor || '#ccc'}; color: ${event.textColor || '#000'};">
+                                ${event.title || ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    calendarHTML += `
+            </div>
+        </div>
+    `;
+    
+    grid.innerHTML = calendarHTML;
+}
+
+// Make toggleSchedule globally accessible
+window.toggleSchedule = function(index) {
+    console.log('Toggling schedule:', index);
+    const paper = document.querySelector(`.schedule-paper.previous-${index}`);
+    const tab = paper?.querySelector('.schedule-tab');
+    const header = paper?.querySelector('.schedule-header');
+    const content = paper?.querySelector('.schedule-content');
+    
+    if (!paper || !content) {
+        console.error('Could not find schedule elements for index:', index);
+        return;
+    }
+    
+    if (paper.classList.contains('previous-expanded')) {
+        // Collapse back to tab
+        paper.classList.remove('previous-expanded');
+        tab.style.display = 'block';
+        header.style.display = 'none';
+        content.style.display = 'none';
+    } else {
+        // Collapse any other expanded papers first
+        document.querySelectorAll('.schedule-paper.previous-expanded').forEach(p => {
+            const pIndex = p.className.match(/previous-(\d+)/)?.[1];
+            if (pIndex && pIndex !== index.toString()) {
+                window.toggleSchedule(parseInt(pIndex));
+            }
+        });
+        
+        // Expand this one
+        paper.classList.add('previous-expanded');
+        tab.style.display = 'none';
+        header.style.display = 'flex';
+        content.style.display = 'block';
+    }
+};
+
+function initializePublishedCalendarFromData() {
+    const calendarEl = document.getElementById('publishedCalendar');
+    const events = createEventsFromData(editedScheduleData);
+
+    publishedCalendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,dayGridWeek,dayGridDay'
+        },
+        showNonCurrentDates: false,
+        fixedWeekCount: false,
+        events: events,
+        eventContent: function(arg) {
+            return { html: arg.event.title };
+        }
+    });
+
+    publishedCalendar.render();
+}
+        .then(data => {
+            const values = data.values;
+            const events = createEventsFromData(values || []);
+
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
+                },
+                showNonCurrentDates: false,
+                fixedWeekCount: false,
+                events: events,
+                eventContent: function(arg) {
+                    return { html: arg.event.title };
+                }
+            });
+
+            calendar.render();
+        })
+        .catch(error => {
+            console.error('Error fetching data: ', error);
+            calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
+        });
+}
+
+function initializeSupervisorViewCalendar() {
+    const calendarEl = document.getElementById('supervisorViewCalendar');
+
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const values = data.values;
+            const events = createEventsFromData(values || []);
+
+            supervisorViewCalendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
+                },
+                showNonCurrentDates: false,
+                fixedWeekCount: false,
+                events: events,
+                eventContent: function(arg) {
+                    return { html: arg.event.title };
+                }
+            });
+
+            supervisorViewCalendar.render();
+        })
+        .catch(error => {
+            console.error('Error fetching data: ', error);
+            calendarEl.innerHTML = '<p style="text-align: center;">Error fetching data. Check the console for details.</p>';
+        });
+}
+
+function initializeSupervisorEditCalendar() {
+    const calendarEl = document.getElementById('supervisorEditCalendar');
+
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
