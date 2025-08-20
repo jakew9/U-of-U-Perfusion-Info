@@ -198,56 +198,73 @@ function saveEdit() {
 }
 
 function publishSchedule() {
-    // Capture the current calendar as an image snapshot
-    captureCalendarSnapshot().then(snapshotData => {
-        // Save current published schedule to history before updating
-        const currentPublished = localStorage.getItem('perfusionPublishedSchedule');
-        if (currentPublished) {
-            saveToHistory(JSON.parse(currentPublished));
-        }
-        
-        // Create new published data with snapshot
-        const publishedData = {
-            schedule: editedScheduleData,
-            timestamp: new Date().toISOString(),
-            snapshot: snapshotData,
-            month: getCurrentMonthName(),
-            year: new Date().getFullYear()
-        };
-        
-        // Save new published schedule with snapshot
-        localStorage.setItem('perfusionPublishedSchedule', JSON.stringify(publishedData));
-        
-        // Recreate the schedule stack with snapshots
-        const calendarEl = document.getElementById('publishedCalendar');
-        if (calendarEl) {
-            createScheduleStack(calendarEl);
-        }
-        
-        // Update last modified time in header
-        const now = new Date();
-        const lastUpdatedElement = document.getElementById('lastUpdated');
-        if (lastUpdatedElement) {
-            lastUpdatedElement.textContent = `Last updated: ${now.toLocaleString()}`;
-        }
-        
-        alert(`${getCurrentMonthName()} schedule snapshot saved successfully!`);
-    });
+    // Get the current month being viewed in the edit calendar
+    const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
+    const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'long' });
+    const currentYear = currentDate.getFullYear();
+    
+    // Capture snapshot of the current month being edited
+    const snapshotData = captureCurrentMonthSnapshot();
+    
+    // Create new published version
+    const newVersion = {
+        id: Date.now(), // Unique ID for this version
+        month: currentMonth,
+        year: currentYear,
+        timestamp: new Date().toISOString(),
+        snapshot: snapshotData,
+        schedule: JSON.parse(JSON.stringify(editedScheduleData)) // Deep copy
+    };
+    
+    // Get existing published versions
+    let publishedVersions = [];
+    const existingVersions = localStorage.getItem('perfusionPublishedVersions');
+    if (existingVersions) {
+        publishedVersions = JSON.parse(existingVersions);
+    }
+    
+    // Add new version to the beginning (most recent first)
+    publishedVersions.unshift(newVersion);
+    
+    // Keep only last 10 versions to prevent storage bloat
+    if (publishedVersions.length > 10) {
+        publishedVersions = publishedVersions.slice(0, 10);
+    }
+    
+    // Save updated versions
+    localStorage.setItem('perfusionPublishedVersions', JSON.stringify(publishedVersions));
+    
+    // Refresh the published schedule display
+    refreshPublishedScheduleDisplay();
+    
+    // Update last modified time in header
+    const now = new Date();
+    const lastUpdatedElement = document.getElementById('lastUpdated');
+    if (lastUpdatedElement) {
+        lastUpdatedElement.textContent = `Last updated: ${now.toLocaleString()}`;
+    }
+    
+    alert(`${currentMonth} ${currentYear} schedule published successfully!`);
 }
 
-function captureCalendarSnapshot() {
-    return new Promise((resolve) => {
-        // Get the current calendar element
-        const calendarEl = document.getElementById('supervisorEditCalendar');
-        if (!calendarEl) {
-            resolve(null);
-            return;
-        }
-        
-        // Create a clean calendar snapshot
-        const snapshotData = createCalendarSnapshot(editedScheduleData);
-        resolve(snapshotData);
+function captureCurrentMonthSnapshot() {
+    const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    // Get events for the current month being edited
+    const events = createEventsFromData(editedScheduleData || []);
+    const monthEvents = events.filter(event => {
+        const eventDate = new Date(event.start);
+        return eventDate.getFullYear() === year && eventDate.getMonth() === month;
     });
+    
+    return {
+        month: currentDate.toLocaleDateString('en-US', { month: 'long' }),
+        year: year,
+        events: monthEvents,
+        capturedAt: new Date().toISOString()
+    };
 }
 
 function createCalendarSnapshot(data) {
@@ -610,10 +627,99 @@ function initializeSupervisorEditCalendarFromData() {
 
 function initializePublishedCalendar() {
     const calendarEl = document.getElementById('publishedCalendar');
-    
-    // Create the schedule stack instead of a single calendar
-    createScheduleStack(calendarEl);
+    refreshPublishedScheduleDisplay();
 }
+
+function refreshPublishedScheduleDisplay() {
+    const calendarEl = document.getElementById('publishedCalendar');
+    if (!calendarEl) return;
+    
+    // Get published versions
+    const publishedVersions = getPublishedVersions();
+    
+    if (publishedVersions.length === 0) {
+        calendarEl.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">No published schedules yet. Go to Supervisor Edit to publish a schedule.</p>';
+        return;
+    }
+    
+    // Show the most recent version by default
+    displayPublishedVersion(0, publishedVersions);
+}
+
+function getPublishedVersions() {
+    const versions = localStorage.getItem('perfusionPublishedVersions');
+    return versions ? JSON.parse(versions) : [];
+}
+
+let currentVersionIndex = 0;
+
+function displayPublishedVersion(versionIndex, versions) {
+    const calendarEl = document.getElementById('publishedCalendar');
+    if (!calendarEl || !versions || versions.length === 0) return;
+    
+    currentVersionIndex = versionIndex;
+    const version = versions[versionIndex];
+    
+    if (!version) return;
+    
+    // Create the version display
+    calendarEl.innerHTML = `
+        <div class="published-version-container">
+            <div class="version-header">
+                <div class="version-info">
+                    <h2>${version.month} ${version.year} Schedule</h2>
+                    <p class="version-meta">Published: ${new Date(version.timestamp).toLocaleString()}</p>
+                    <p class="version-number">Version ${versionIndex + 1} of ${versions.length}</p>
+                </div>
+                <div class="version-navigation">
+                    <button class="nav-btn prev-btn" onclick="showPreviousVersion()" ${versionIndex >= versions.length - 1 ? 'disabled' : ''}>
+                        ← Previous
+                    </button>
+                    <button class="nav-btn next-btn" onclick="showNextVersion()" ${versionIndex <= 0 ? 'disabled' : ''}>
+                        Next →
+                    </button>
+                </div>
+            </div>
+            <div class="version-calendar" id="versionCalendar">
+                <!-- Calendar will be rendered here -->
+            </div>
+        </div>
+    `;
+    
+    // Render the calendar snapshot
+    setTimeout(() => {
+        renderVersionCalendar(version.snapshot);
+    }, 100);
+}
+
+function renderVersionCalendar(snapshotData) {
+    const container = document.getElementById('versionCalendar');
+    if (!container || !snapshotData) return;
+    
+    if (!snapshotData.events || snapshotData.events.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No calendar data available for this version</p>';
+        return;
+    }
+    
+    // Generate the calendar grid
+    container.innerHTML = `<div id="calendarGrid" class="snapshot-calendar-grid"></div>`;
+    generateFullCalendarGrid('calendarGrid', snapshotData);
+}
+
+// Navigation functions
+window.showPreviousVersion = function() {
+    const versions = getPublishedVersions();
+    if (currentVersionIndex < versions.length - 1) {
+        displayPublishedVersion(currentVersionIndex + 1, versions);
+    }
+};
+
+window.showNextVersion = function() {
+    const versions = getPublishedVersions();
+    if (currentVersionIndex > 0) {
+        displayPublishedVersion(currentVersionIndex - 1, versions);
+    }
+};
 
 function createScheduleStack(container) {
     // Get all schedule versions from localStorage
