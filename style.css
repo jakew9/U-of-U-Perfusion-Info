@@ -641,13 +641,13 @@ body {
     font-weight: bold;
 }
  
-/* Schedule Stack Styles */
+/* Schedule Stack Styles - Cleaner Layout */
 .schedule-stack {
     position: relative;
-    max-width: 95%;
+    max-width: 100%;
     margin: 0 auto;
     padding: 20px 0;
-    min-height: 500px; /* Ensure proper height for absolute positioning */
+    min-height: 600px;
 }
 
 .schedule-paper {
@@ -657,120 +657,80 @@ body {
     position: relative;
     transition: all 0.3s ease;
     border: 1px solid #ddd;
+    width: 100%;
 }
 
 .schedule-paper:hover {
-    transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-    z-index: 10;
 }
 
 /* Current/top schedule */
 .schedule-paper.current {
     z-index: 5;
-    margin-left: 0;
-    margin-right: 0;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
     position: relative;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
 }
 
-/* Previous schedules - paper stack tabs on left */
+/* Previous schedules - clean tabs on left */
 .schedule-paper.previous-1 {
     z-index: 4;
     position: absolute;
-    top: 20px;
-    left: -100px;
-    right: 20px;
-    opacity: 0.95;
-    background: #f8f9fa;
+    top: 0;
+    left: -80px;
+    width: calc(100% + 80px);
 }
 
 .schedule-paper.previous-2 {
     z-index: 3;
     position: absolute;
-    top: 30px;
-    left: -110px;
-    right: 30px;
-    opacity: 0.9;
-    background: #f1f3f4;
+    top: 0;
+    left: -90px;
+    width: calc(100% + 90px);
 }
 
 .schedule-paper.previous-3 {
     z-index: 2;
     position: absolute;
-    top: 40px;
-    left: -120px;
-    right: 40px;
-    opacity: 0.85;
-    background: #e9ecef;
+    top: 0;
+    left: -100px;
+    width: calc(100% + 100px);
 }
 
-/* Tab for previous schedules - looks like paper edge */
+/* Clean tab design */
 .schedule-tab {
     position: absolute;
     left: 0;
     top: 50%;
     transform: translateY(-50%);
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    color: #333;
-    padding: 20px 8px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: #495057;
+    padding: 15px 5px;
     border-radius: 8px 0 0 8px;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 0.8em;
+    font-size: 0.75em;
     font-weight: 600;
-    box-shadow: -4px 0 15px rgba(0,0,0,0.15);
-    width: 100px;
+    box-shadow: -3px 0 10px rgba(0,0,0,0.1);
+    width: 80px;
     text-align: center;
-    border: 1px solid #ddd;
+    border: 1px solid #dee2e6;
     border-right: none;
     writing-mode: vertical-rl;
     text-orientation: mixed;
 }
 
 .schedule-tab:hover {
-    background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
     transform: translateY(-50%) translateX(-3px);
-    box-shadow: -6px 0 20px rgba(0,0,0,0.2);
-}
-
-/* Paper stack shadow effect */
-.schedule-paper.previous-1::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: 2px;
-    bottom: 2px;
-    background: white;
-    border-radius: 8px;
-    z-index: -1;
-    opacity: 0.7;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.schedule-paper.previous-2::before {
-    content: '';
-    position: absolute;
-    top: -4px;
-    left: -4px;
-    right: 4px;
-    bottom: 4px;
-    background: white;
-    border-radius: 8px;
-    z-index: -1;
-    opacity: 0.5;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: -5px 0 15px rgba(0,0,0,0.15);
 }
 
 .schedule-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 15px 20px;
+    padding: 20px;
     border-radius: 8px 8px 0 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    text-align: center;
 }
 
 .schedule-header.previous {
@@ -778,9 +738,9 @@ body {
 }
 
 .schedule-title {
-    font-size: 1.2em;
+    font-size: 1.5em;
     font-weight: 600;
-    margin: 0;
+    margin: 0 0 5px 0;
 }
 
 .schedule-date {
@@ -789,11 +749,9 @@ body {
 }
 
 .schedule-content {
-    padding: 20px;
-    min-height: 400px;
-    max-height: 600px;
-    overflow: auto;
-    transition: all 0.4s ease;
+    padding: 0;
+    min-height: 500px;
+    overflow: hidden;
 }
 
 .schedule-content.collapsed {
@@ -803,10 +761,9 @@ body {
 /* When previous schedule is expanded */
 .schedule-paper.previous-expanded {
     left: 0 !important;
-    right: 0 !important;
+    width: 100% !important;
     z-index: 6 !important;
     margin-top: 20px;
-    background: white !important;
 }
 
 .schedule-paper.previous-expanded .schedule-content {
@@ -817,20 +774,109 @@ body {
     display: none;
 }
 
-/* Hide expand button completely */
-.expand-button {
-    display: none !important;
+/* Calendar Snapshot Styles */
+.calendar-snapshot {
+    height: 100%;
+    background: white;
+}
+
+.snapshot-calendar-header {
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.snapshot-calendar-header h2 {
+    color: #495057;
+    margin: 0;
+    font-size: 2em;
+    font-weight: 600;
+}
+
+.snapshot-calendar-grid {
+    height: calc(100% - 80px);
+    overflow: auto;
+}
+
+.calendar-grid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #343a40;
+    color: white;
+}
+
+.day-header {
+    padding: 15px 5px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9em;
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.calendar-body {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    flex: 1;
+    border: 1px solid #dee2e6;
+    border-top: none;
+}
+
+.calendar-day {
+    border-right: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+    padding: 8px;
+    background: white;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar-day.other-month {
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+.day-number {
+    font-weight: 600;
+    font-size: 0.9em;
+    margin-bottom: 4px;
+}
+
+.day-events {
+    flex: 1;
+    overflow: hidden;
+}
+
+.event-content {
+    font-size: 0.65em;
+    line-height: 1.1;
+    padding: 1px 2px;
+    margin-bottom: 1px;
+    border-radius: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Status badges */
 .status-badge {
     display: inline-block;
-    padding: 4px 12px;
+    padding: 6px 12px;
     border-radius: 20px;
     font-size: 0.8em;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    margin-top: 5px;
 }
 
 .status-current {
@@ -843,88 +889,9 @@ body {
     color: white;
 }
 
-/* Animation for new schedule */
-@keyframes newScheduleSlide {
-    from {
-        transform: translateY(-100px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.schedule-paper.new-schedule {
-    animation: newScheduleSlide 0.8s ease-out;
-}
-
-/* Calendar Snapshot Styles */
-.calendar-snapshot {
-    min-height: 300px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
-    border: 2px dashed #dee2e6;
-}
-
-.snapshot-header {
-    text-align: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #e9ecef;
-}
-
-.snapshot-header h2 {
-    color: #495057;
-    margin: 0 0 5px 0;
-    font-size: 1.8em;
-    font-weight: 600;
-}
-
-.snapshot-date {
-    color: #6c757d;
-    font-size: 0.9em;
-    font-style: italic;
-}
-
-.snapshot-grid {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    border: 1px solid #dee2e6;
-}
-
-.snapshot-calendar {
-    text-align: center;
-}
-
-.calendar-note {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    font-weight: 600;
-}
-
-.event-summary {
-    background: #e8f5e8;
-    border: 1px solid #d4edda;
-    border-radius: 6px;
-    padding: 15px;
-    color: #155724;
-    line-height: 1.6;
-    text-align: left;
-}
-
-.event-summary strong {
-    color: #0f5132;
-}
-
-.event-summary small {
-    color: #6c757d;
-    font-style: italic;
+/* Remove old snapshot styles */
+.snapshot-header, .snapshot-date, .snapshot-grid, .calendar-note, .event-summary {
+    display: none;
 }
 .content-card {
     background: white;
