@@ -205,8 +205,18 @@ function clearEdits() {
     // Revert editedScheduleData back to the original Google Sheets data
     editedScheduleData = JSON.parse(JSON.stringify(originalScheduleData));
     
-    // Clear any saved edits from localStorage
+    // Clear ALL saved data from localStorage - this is the key fix
     localStorage.removeItem('perfusionScheduleEdits');
+    localStorage.removeItem('perfusionPublishedSchedule');
+    localStorage.removeItem('perfusionPublishedVersions');
+    localStorage.removeItem('perfusionScheduleHistory');
+    
+    console.log('All localStorage data cleared:', {
+        edits: localStorage.getItem('perfusionScheduleEdits'),
+        published: localStorage.getItem('perfusionPublishedSchedule'),
+        versions: localStorage.getItem('perfusionPublishedVersions'),
+        history: localStorage.getItem('perfusionScheduleHistory')
+    });
     
     // Refresh the calendar with original data
     supervisorEditCalendar.destroy();
@@ -296,11 +306,33 @@ function getCurrentMonthName() {
 // Date functions
 function parseDate(dateString) {
     if (!dateString) return null;
-    const date = new Date(dateString);
+    
+    // Handle different date formats and ensure consistency
+    let date;
+    if (typeof dateString === 'string') {
+        // If it's already in YYYY-MM-DD format, use it directly
+        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            date = new Date(dateString + 'T00:00:00'); // Add time to avoid timezone issues
+        } else {
+            date = new Date(dateString);
+        }
+    } else {
+        date = new Date(dateString);
+    }
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+        console.warn('Invalid date:', dateString);
+        return null;
+    }
+    
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    
+    const result = `${year}-${month}-${day}`;
+    console.log(`parseDate: "${dateString}" -> "${result}"`);
+    return result;
 }
 
 function getCorrectDayOfWeek(dateString) {
@@ -647,13 +679,20 @@ function displayPublishedVersion(versionIndex, versions) {
                     <p class="version-meta">Published: ${new Date(version.timestamp).toLocaleString()}</p>
                     <p class="version-number">Version ${versionIndex + 1} of ${versions.length}</p>
                 </div>
-                <div class="version-navigation">
-                    <button class="nav-btn prev-btn" onclick="showPreviousVersion()" ${versionIndex >= versions.length - 1 ? 'disabled' : ''}>
-                        ← Previous
-                    </button>
-                    <button class="nav-btn next-btn" onclick="showNextVersion()" ${versionIndex <= 0 ? 'disabled' : ''}>
-                        Next →
-                    </button>
+                <div class="version-controls">
+                    <div class="version-navigation">
+                        <button class="nav-btn prev-btn" onclick="showPreviousVersion()" ${versionIndex >= versions.length - 1 ? 'disabled' : ''}>
+                            ← Previous
+                        </button>
+                        <button class="nav-btn next-btn" onclick="showNextVersion()" ${versionIndex <= 0 ? 'disabled' : ''}>
+                            Next →
+                        </button>
+                    </div>
+                    <div class="version-actions">
+                        <button class="delete-btn" onclick="deleteVersion(${versionIndex})" ${versions.length <= 1 ? 'disabled' : ''} title="Delete this version">
+                            🗑️ Delete
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="version-calendar" id="versionCalendar">
@@ -763,6 +802,44 @@ window.publishSchedule = publishSchedule;
 window.openEditModal = openEditModal;
 window.closeEditModal = closeEditModal;
 window.saveEdit = saveEdit;
+
+// Delete version function
+window.deleteVersion = function(versionIndex) {
+    const versions = getPublishedVersions();
+    
+    if (versions.length <= 1) {
+        alert('Cannot delete the last remaining version.');
+        return;
+    }
+    
+    const version = versions[versionIndex];
+    const confirmDelete = confirm(`Are you sure you want to delete this version?\n\n${version.month} ${version.year} Schedule\nPublished: ${new Date(version.timestamp).toLocaleString()}\n\nThis action cannot be undone.`);
+    
+    if (!confirmDelete) {
+        return;
+    }
+    
+    // Remove the version from the array
+    versions.splice(versionIndex, 1);
+    
+    // Save updated versions back to localStorage
+    localStorage.setItem('perfusionPublishedVersions', JSON.stringify(versions));
+    
+    // Determine which version to show next
+    let newVersionIndex = versionIndex;
+    if (newVersionIndex >= versions.length) {
+        newVersionIndex = versions.length - 1; // Show the last version if we deleted the current last one
+    }
+    
+    // Update the current index
+    currentVersionIndex = newVersionIndex;
+    
+    // Refresh the display
+    displayPublishedVersion(newVersionIndex, versions);
+    
+    console.log(`Deleted version ${versionIndex + 1}. Now showing version ${newVersionIndex + 1} of ${versions.length}`);
+    alert(`Version deleted successfully. Now showing version ${newVersionIndex + 1} of ${versions.length}.`);
+};
 
 // Navigation functions for published versions
 window.showPreviousVersion = function() {
