@@ -246,6 +246,9 @@ function createEventsFromData(data) {
         
         const formattedDate = parseDate(date);
         
+        // DEBUG: Log the data for troubleshooting
+        console.log(`Date: ${formattedDate}, Day: ${dayShiftData}, Night: ${nightShiftData}, School: ${schoolData}, Off: ${offData}`);
+        
         if (formattedDate) {
             const dayOfWeek = getCorrectDayOfWeek(formattedDate);
             let titleHTML = '';
