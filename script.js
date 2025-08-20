@@ -239,8 +239,8 @@ function createEventsFromData(data) {
         const date = row[0];        
         const dayShiftData = row[16];   
         const nightShiftData = row[17];
-        const schoolData = row[18];     // Column S (index 18)
-        const offData = row[19];        // Column T (index 19)
+        const schoolData = row[18];     // Column S (index 18) - School assignments only
+        const offData = row[19];        // Column T (index 19) - People requesting off
         // Check if there's a custom color stored beyond the normal data range
         const customColor = row.length > 20 ? row[20] : ''; // Use index 20 for custom color to avoid conflicts
         
@@ -250,21 +250,25 @@ function createEventsFromData(data) {
             const dayOfWeek = getCorrectDayOfWeek(formattedDate);
             let titleHTML = '';
 
-            if (dayShiftData) {
-                titleHTML += `<p>${dayShiftData}</p>`;
-            }
-            if (nightShiftData) {
-                titleHTML += `<p>${nightShiftData}</p>`;
+            // Add Day shift
+            if (dayShiftData && dayShiftData.trim()) {
+                titleHTML += `<p style="margin:0; line-height:1.1;">Day: ${dayShiftData.trim()}</p>`;
             }
             
-            // Add Off data with extra space
-            if (offData) {
-                titleHTML += `<p>&nbsp;</p><p>${offData}</p>`;
+            // Add Night shift
+            if (nightShiftData && nightShiftData.trim()) {
+                titleHTML += `<p style="margin:0; line-height:1.1;">Night: ${nightShiftData.trim()}</p>`;
             }
             
-            // Add School data directly below Off
-            if (schoolData) {
-                titleHTML += `<p>${schoolData}</p>`;
+            // Add blank line before Off section (only if there's Off data)
+            if (offData && offData.trim()) {
+                titleHTML += `<p style="margin:0; line-height:1.1;">&nbsp;</p>`;
+                titleHTML += `<p style="margin:0; line-height:1.1; color:#d32f2f;">Off: ${offData.trim()}</p>`;
+            }
+            
+            // Add School assignments directly below Off (no extra space)
+            if (schoolData && schoolData.trim()) {
+                titleHTML += `<p style="margin:0; line-height:1.1; color:#1976d2;">School: ${schoolData.trim()}</p>`;
             }
 
             if (titleHTML) {
