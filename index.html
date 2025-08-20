@@ -28,10 +28,8 @@
 
     <div id="supervisorPage" class="page">
         <div class="page-header">
-            <div class="page-header-left">
-                <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
-                <h1 class="page-title">Supervisor Menu</h1>
-            </div>
+            <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
+            <h1 class="page-title">Supervisor Menu</h1>
         </div>
         <div class="supervisor-menu">
             <div class="menu-card">
@@ -49,23 +47,17 @@
 
     <div id="supervisorViewPage" class="page">
         <div class="page-header">
-            <div class="page-header-left">
-                <button class="back-button" onclick="showPage('supervisorPage')">← Back</button>
-                <h1 class="page-title">Supervisor - View Schedule</h1>
-            </div>
+            <button class="back-button" onclick="showPage('supervisorPage')">← Back</button>
+            <h1 class="page-title">Supervisor - View Schedule</h1>
         </div>
         <div id='supervisorViewCalendar'></div>
     </div>
 
     <div id="supervisorEditPage" class="page">
         <div class="page-header">
-            <div class="page-header-left">
-                <button class="back-button" onclick="showPage('supervisorPage')">← Back</button>
-                <h1 class="page-title">Supervisor - Edit Schedule</h1>
-            </div>
-            <div class="page-header-right">
-                <button class="publish-button" onclick="publishSchedule()">Publish Schedule</button>
-            </div>
+            <button class="back-button" onclick="showPage('supervisorPage')">← Back</button>
+            <h1 class="page-title">Supervisor - Edit Schedule</h1>
+            <button class="publish-button" onclick="publishSchedule()">Publish Schedule</button>
         </div>
         <div class="supervisor-controls">
             <div class="edit-instructions">
@@ -78,60 +70,42 @@
 
     <div id="publishedSchedulePage" class="page">
         <div class="page-header">
-            <div class="page-header-left">
-                <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
-                <h1 class="page-title">Published Schedule</h1>
-            </div>
-            <div class="page-header-right">
-                <button class="previous-version-button" id="previousVersionBtn" onclick="showPreviousVersion()" disabled>
-                    <span>Previous Version</span>
-                    <span class="version-indicator" id="previousVersionNumber">V1</span>
-                </button>
-                <div class="last-updated" id="lastUpdated"></div>
-            </div>
+            <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
+            <h1 class="page-title">Published Schedule</h1>
+            <!-- ADDED: Previous Version Button -->
+            <button class="previous-version-button" id="previousVersionBtn" onclick="showPreviousVersion()" style="display: none;">
+                <span>Previous Version</span>
+                <span class="version-indicator" id="previousVersionNumber">V1</span>
+            </button>
+            <div class="last-updated" id="lastUpdated"></div>
         </div>
-        <div class="schedule-container" id="currentSchedule">
-            <div class="schedule-header">
-                <div class="schedule-title" id="currentScheduleTitle">Current Schedule</div>
-                <div class="schedule-date" id="currentScheduleDate"></div>
-                <span class="status-badge status-current">CURRENT</span>
-            </div>
-            <div class="schedule-content">
-                <div id='publishedCalendar'></div>
-            </div>
-        </div>
+        <div id='publishedCalendar'></div>
     </div>
 
+    <!-- ADDED: Previous Schedule Page -->
     <div id="previousSchedulePage" class="page">
         <div class="page-header">
-            <div class="page-header-left">
-                <button class="back-button" onclick="showPage('publishedSchedulePage')">← Back to Current</button>
-                <h1 class="page-title" id="previousSchedulePageTitle">Previous Schedule</h1>
-            </div>
-            <div class="page-header-right">
-                <div class="last-updated" id="previousLastUpdated"></div>
-            </div>
+            <button class="back-button" onclick="showPage('publishedSchedulePage')">← Back to Current</button>
+            <h1 class="page-title" id="previousSchedulePageTitle">Previous Schedule</h1>
+            <div class="last-updated" id="previousLastUpdated"></div>
         </div>
-        <div class="schedule-container" id="previousSchedule">
-            <div class="schedule-header previous">
-                <div class="schedule-title" id="previousScheduleTitle">Previous Schedule</div>
-                <div class="schedule-date" id="previousScheduleDate"></div>
-                <span class="status-badge status-previous">PREVIOUS</span>
-            </div>
-            <div class="schedule-content">
-                <div id='previousCalendar'></div>
-            </div>
-        </div>
+        <div id='previousCalendar'></div>
     </div>
 
     <div id="preferencesPage" class="page">
         <div class="page-header">
-            <div class="page-header-left">
-                <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
-                <h1 class="page-title">Preferences</h1>
-            </div>
+            <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
+            <h1 class="page-title">Preferences</h1>
         </div>
         <div class="content-card">
+            <div class="preferences-section">
+                <h3>Calendar Settings</h3>
+                <p>Configure your calendar display preferences, color coding rules, and notification settings.</p>
+            </div>
+            <div class="preferences-section">
+                <h3>Shift Settings</h3>
+                <p>Manage shift types, employee classifications, and scheduling rules.</p>
+            </div>
             <div class="preferences-section">
                 <h3>Data Source</h3>
                 <p>Configure your Google Sheets connection and data range settings.</p>
@@ -141,10 +115,8 @@
 
     <div id="importantDatesPage" class="page">
         <div class="page-header">
-            <div class="page-header-left">
-                <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
-                <h1 class="page-title">Important Dates</h1>
-            </div>
+            <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
+            <h1 class="page-title">Important Dates</h1>
         </div>
         <div class="content-card">
             <div class="important-date-item">
@@ -234,15 +206,8 @@
     </div>
 
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js'></script>
+   
     <script src="script.js"></script>
     
 </body>
-</html>section">
-                <h3>Calendar Settings</h3>
-                <p>Configure your calendar display preferences, color coding rules, and notification settings.</p>
-            </div>
-            <div class="preferences-section">
-                <h3>Shift Settings</h3>
-                <p>Manage shift types, employee classifications, and scheduling rules.</p>
-            </div>
-            <div class="preferences-
+</html>
