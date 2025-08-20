@@ -244,12 +244,6 @@ body {
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     flex-shrink: 0;
-    justify-content: space-between;
-}
-
-.page-header-left {
-    display: flex;
-    align-items: center;
 }
  
 .back-button {
@@ -273,15 +267,10 @@ body {
     margin: 0;
 }
 
-.page-header-right {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-/* Previous Version Button */
+/* ADDED: Previous Version Button Styles */
 .previous-version-button {
     padding: 0.5rem 1rem;
+    margin-left: 1rem;
     background-color: #6c757d;
     color: white;
     border: none;
@@ -299,13 +288,6 @@ body {
     transform: translateY(-2px);
 }
 
-.previous-version-button:disabled {
-    background-color: #e9ecef;
-    color: #6c757d;
-    cursor: not-allowed;
-    transform: none;
-}
-
 .version-indicator {
     background-color: #495057;
     color: white;
@@ -316,7 +298,7 @@ body {
 }
  
 /* Calendar Styles - Ultra Compact */
-#calendar, #supervisorCalendar, #publishedCalendar, #supervisorViewCalendar, #supervisorEditCalendar {
+#calendar, #supervisorCalendar, #publishedCalendar, #supervisorViewCalendar, #supervisorEditCalendar, #previousCalendar {
     background: rgba(255, 255, 255, 0.95);
     border-radius: 15px;
     padding: 5px;
@@ -688,24 +670,97 @@ body {
     color: #333;
     font-weight: bold;
 }
-
-/* Schedule Version Styles - Simplified */
-.schedule-container {
+ 
+/* Schedule Stack Styles - Cleaner Layout */
+.schedule-stack {
     position: relative;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 20px 0;
+    min-height: 600px;
+}
+
+.schedule-paper {
     background: white;
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-    overflow: hidden;
-    flex: 1;
-    min-height: 0;
+    position: relative;
+    transition: all 0.3s ease;
+    border: 1px solid #ddd;
+    width: 100%;
+}
+
+.schedule-paper:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+/* Current/top schedule */
+.schedule-paper.current {
+    z-index: 5;
+    position: relative;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+}
+
+/* Previous schedules - clean tabs on left */
+.schedule-paper.previous-1 {
+    z-index: 4;
+    position: absolute;
+    top: 0;
+    left: -80px;
+    width: calc(100% + 80px);
+}
+
+.schedule-paper.previous-2 {
+    z-index: 3;
+    position: absolute;
+    top: 0;
+    left: -90px;
+    width: calc(100% + 90px);
+}
+
+.schedule-paper.previous-3 {
+    z-index: 2;
+    position: absolute;
+    top: 0;
+    left: -100px;
+    width: calc(100% + 100px);
+}
+
+/* Clean tab design */
+.schedule-tab {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: #495057;
+    padding: 15px 5px;
+    border-radius: 8px 0 0 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.75em;
+    font-weight: 600;
+    box-shadow: -3px 0 10px rgba(0,0,0,0.1);
+    width: 80px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+    border-right: none;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+}
+
+.schedule-tab:hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    transform: translateY(-50%) translateX(-3px);
+    box-shadow: -5px 0 15px rgba(0,0,0,0.15);
 }
 
 .schedule-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 15px 20px;
+    padding: 20px;
+    border-radius: 8px 8px 0 0;
     text-align: center;
-    border-bottom: 2px solid rgba(255,255,255,0.2);
 }
 
 .schedule-header.previous {
@@ -713,31 +768,145 @@ body {
 }
 
 .schedule-title {
-    font-size: 1.3em;
+    font-size: 1.5em;
     font-weight: 600;
     margin: 0 0 5px 0;
 }
 
 .schedule-date {
-    font-size: 0.85em;
+    font-size: 0.9em;
     opacity: 0.9;
 }
 
 .schedule-content {
-    height: calc(100% - 80px);
+    padding: 0;
+    min-height: 500px;
     overflow: hidden;
+}
+
+.schedule-content.collapsed {
+    display: none;
+}
+
+/* When previous schedule is expanded */
+.schedule-paper.previous-expanded {
+    left: 0 !important;
+    width: 100% !important;
+    z-index: 6 !important;
+    margin-top: 20px;
+}
+
+.schedule-paper.previous-expanded .schedule-content {
+    display: block !important;
+}
+
+.schedule-paper.previous-expanded .schedule-tab {
+    display: none;
+}
+
+/* Calendar Snapshot Styles */
+.calendar-snapshot {
+    height: 100%;
+    background: white;
+}
+
+.snapshot-calendar-header {
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.snapshot-calendar-header h2 {
+    color: #495057;
+    margin: 0;
+    font-size: 2em;
+    font-weight: 600;
+}
+
+.snapshot-calendar-grid {
+    height: calc(100% - 80px);
+    overflow: auto;
+}
+
+.calendar-grid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #343a40;
+    color: white;
+}
+
+.day-header {
+    padding: 15px 5px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9em;
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.calendar-body {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    flex: 1;
+    border: 1px solid #dee2e6;
+    border-top: none;
+}
+
+.calendar-day {
+    border-right: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+    padding: 8px;
+    background: white;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar-day.other-month {
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+.day-number {
+    font-weight: 600;
+    font-size: 0.9em;
+    margin-bottom: 4px;
+}
+
+.day-events {
+    flex: 1;
+    overflow: hidden;
+}
+
+.event-content {
+    font-size: 0.65em;
+    line-height: 1.1;
+    padding: 1px 2px;
+    margin-bottom: 1px;
+    border-radius: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Status badges */
 .status-badge {
     display: inline-block;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.7em;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-left: 10px;
+    margin-top: 5px;
 }
 
 .status-current {
@@ -750,6 +919,10 @@ body {
     color: white;
 }
 
+/* Remove old snapshot styles */
+.snapshot-header, .snapshot-date, .snapshot-grid, .calendar-note, .event-summary {
+    display: none;
+}
 .content-card {
     background: white;
     padding: 2rem;
