@@ -276,12 +276,12 @@ function createEventsFromData(data) {
             
             // Add Off data
             if (offData && offData.trim()) {
-                titleHTML += `<div style="color:#d32f2f;">Off: ${offData.trim()}</div>`;
+                titleHTML += `<div style="color:#FFFFFF; background-color:#FF0000; padding:1px 2px; border-radius:2px; font-weight:bold;">Off: ${offData.trim()}</div>`;
             }
             
             // Add School assignments
             if (schoolData && schoolData.trim()) {
-                titleHTML += `<div style="color:#1976d2;">School: ${schoolData.trim()}</div>`;
+                titleHTML += `<div style="color:#FFFFFF; background-color:#0066CC; padding:1px 2px; border-radius:2px; font-weight:bold;">School: ${schoolData.trim()}</div>`;
             }
 
             if (titleHTML) {
