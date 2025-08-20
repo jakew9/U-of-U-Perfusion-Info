@@ -7,6 +7,7 @@ let calendar;
 let supervisorViewCalendar;
 let supervisorEditCalendar;
 let publishedCalendar;
+let supervisorPublishedCalendar;
 let originalScheduleData = [];
 let editedScheduleData = [];
 let currentEditDate = null;
@@ -77,7 +78,7 @@ function showPage(pageId) {
     document.getElementById(pageId).classList.add('active');
     
     // Reset supervisor access when leaving supervisor pages
-    if (pageId !== 'supervisorEditPage' && pageId !== 'supervisorViewPage' && pageId !== 'supervisorPage') {
+    if (pageId !== 'supervisorEditPage' && pageId !== 'supervisorViewPage' && pageId !== 'supervisorPage' && pageId !== 'supervisorPublishedPage') {
         hasSupervisorAccess = false;
     }
     
@@ -89,6 +90,8 @@ function showPage(pageId) {
         initializeSupervisorEditCalendar();
     } else if (pageId === 'publishedSchedulePage' && !publishedCalendar) {
         initializePublishedCalendar();
+    } else if (pageId === 'supervisorPublishedPage' && !supervisorPublishedCalendar) {
+        initializeSupervisorPublishedCalendar();
     }
 }
 
@@ -354,7 +357,7 @@ function getCorrectDayOfWeek(dateString) {
 function createEventsFromData(data) {
     const events = [];
     
-    data.forEach(row => {
+    data.forEach((row, rowIndex) => {
         const date = row[0];        
         const dayShiftData = row[16];   
         const nightShiftData = row[17];
@@ -365,14 +368,13 @@ function createEventsFromData(data) {
         
         const formattedDate = parseDate(date);
         
-        // DEBUG: Log the data for troubleshooting
-        if (formattedDate === '2025-09-03') {
-            console.log(`FULL ROW DATA for Sep 3:`, row);
-            console.log(`Row length: ${row.length}`);
-            console.log(`Index 18 (School): "${row[18]}"`);
-            console.log(`Index 19 (Off): "${row[19]}"`);
+        // Special debug for September 1st and nearby dates
+        if (formattedDate && (formattedDate.includes('2025-09-01') || formattedDate.includes('2025-08-31') || formattedDate.includes('2025-09-02'))) {
+            console.log(`ROW ${rowIndex}: Raw date: "${date}", Formatted: "${formattedDate}"`);
+            console.log(`Day shift: "${dayShiftData}", Night shift: "${nightShiftData}"`);
+            console.log(`School: "${schoolData}", Off: "${offData}"`);
+            console.log(`Full row:`, row);
         }
-        console.log(`Date: ${formattedDate}, Day: ${dayShiftData}, Night: ${nightShiftData}, School: ${schoolData}, Off: ${offData}`);
         
         if (formattedDate) {
             const dayOfWeek = getCorrectDayOfWeek(formattedDate);
@@ -403,7 +405,12 @@ function createEventsFromData(data) {
                 titleHTML += `<div style="color:#FFFFFF; background-color:#0066CC; padding:1px 2px; border-radius:2px; font-weight:bold;">School: ${schoolData.trim()}</div>`;
             }
 
-            if (titleHTML) {
+            // Create event even if no shift data (for September 1st debugging)
+            if (titleHTML || formattedDate === '2025-09-01') {
+                if (!titleHTML) {
+                    titleHTML = '<div style="color:#999;">No assignments</div>';
+                }
+                
                 const eventData = {
                     title: titleHTML,
                     start: formattedDate,
@@ -411,7 +418,9 @@ function createEventsFromData(data) {
                 };
                 
                 // Debug: log color decisions
-                console.log(`Date: ${formattedDate}, Custom Color: ${customColor}, Day of Week: ${dayOfWeek}`);
+                if (formattedDate === '2025-09-01') {
+                    console.log(`Creating event for Sept 1st: Custom Color: ${customColor}, Day of Week: ${dayOfWeek}`);
+                }
                 
                 // Check for custom color first (only if it's a valid color, not employee initials)
                 if (customColor && customColor.startsWith('#')) {
@@ -453,6 +462,7 @@ function createEventsFromData(data) {
         }
     });
     
+    console.log(`Created ${events.length} total events`);
     return events;
 }
 
@@ -642,13 +652,14 @@ function initializeSupervisorEditCalendarFromData(preserveDate = null) {
     supervisorEditCalendar.render();
 }
 
-function initializePublishedCalendar() {
-    const calendarEl = document.getElementById('publishedCalendar');
-    refreshPublishedScheduleDisplay();
+function initializeSupervisorPublishedCalendar() {
+    const calendarEl = document.getElementById('supervisorPublishedCalendar');
+    hasSupervisorAccess = true; // Ensure supervisor access for this page
+    refreshSupervisorPublishedScheduleDisplay();
 }
 
-function refreshPublishedScheduleDisplay() {
-    const calendarEl = document.getElementById('publishedCalendar');
+function refreshSupervisorPublishedScheduleDisplay() {
+    const calendarEl = document.getElementById('supervisorPublishedCalendar');
     if (!calendarEl) return;
     
     // Get published versions
@@ -660,7 +671,118 @@ function refreshPublishedScheduleDisplay() {
     }
     
     // Show the most recent version by default
-    displayPublishedVersion(0, publishedVersions);
+    displaySupervisorPublishedVersion(0, publishedVersions);
+}
+
+function displaySupervisorPublishedVersion(versionIndex, versions) {
+    const calendarEl = document.getElementById('supervisorPublishedCalendar');
+    if (!calendarEl || !versions || versions.length === 0) return;
+    
+    currentVersionIndex = versionIndex;
+    const version = versions[versionIndex];
+    
+    if (!version) return;
+    
+    // Always show delete button in supervisor section (if more than 1 version)
+    const showDeleteButton = versions.length > 1;
+    
+    // Create the version display
+    calendarEl.innerHTML = `
+        <div class="published-version-container">
+            <div class="version-header">
+                <div class="version-info">
+                    <h2>${version.month} ${version.year} Schedule</h2>
+                    <p class="version-meta">Published: ${new Date(version.timestamp).toLocaleString()}</p>
+                    <p class="version-number">Version ${versionIndex + 1} of ${versions.length}</p>
+                </div>
+                <div class="version-controls">
+                    <div class="version-navigation">
+                        <button class="nav-btn prev-btn" onclick="showSupervisorPreviousVersion()" ${versionIndex >= versions.length - 1 ? 'disabled' : ''}>
+                            ← Previous
+                        </button>
+                        <button class="nav-btn next-btn" onclick="showSupervisorNextVersion()" ${versionIndex <= 0 ? 'disabled' : ''}>
+                            Next →
+                        </button>
+                    </div>
+                    ${showDeleteButton ? `
+                    <div class="version-actions">
+                        <button class="delete-btn" onclick="deleteSupervisorVersion(${versionIndex})" title="Delete this version">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            <div class="version-calendar" id="supervisorVersionCalendar">
+                <!-- Calendar will be rendered here -->
+            </div>
+        </div>
+    `;
+    
+    // Render the calendar snapshot
+    setTimeout(() => {
+        renderSupervisorVersionCalendar(version.snapshot);
+    }, 100);
+}
+
+function renderSupervisorVersionCalendar(snapshotData) {
+    const container = document.getElementById('supervisorVersionCalendar');
+    if (!container || !snapshotData) return;
+    
+    if (!snapshotData.events || snapshotData.events.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No calendar data available for this version</p>';
+        return;
+    }
+    
+    // Generate the calendar grid
+    container.innerHTML = `<div id="supervisorCalendarGrid" class="snapshot-calendar-grid"></div>`;
+    generateFullCalendarGrid('supervisorCalendarGrid', snapshotData);
+}
+
+function initializePublishedCalendar() {
+    const calendarEl = document.getElementById('publishedCalendar');
+    refreshPublishedScheduleDisplay();
+}
+
+function displayPublishedVersion(versionIndex, versions) {
+    const calendarEl = document.getElementById('publishedCalendar');
+    if (!calendarEl || !versions || versions.length === 0) return;
+    
+    currentVersionIndex = versionIndex;
+    const version = versions[versionIndex];
+    
+    if (!version) return;
+    
+    // Regular published schedule - no delete functionality
+    calendarEl.innerHTML = `
+        <div class="published-version-container">
+            <div class="version-header">
+                <div class="version-info">
+                    <h2>${version.month} ${version.year} Schedule</h2>
+                    <p class="version-meta">Published: ${new Date(version.timestamp).toLocaleString()}</p>
+                    <p class="version-number">Version ${versionIndex + 1} of ${versions.length}</p>
+                </div>
+                <div class="version-controls">
+                    <div class="version-navigation">
+                        <button class="nav-btn prev-btn" onclick="showPreviousVersion()" ${versionIndex >= versions.length - 1 ? 'disabled' : ''}>
+                            ← Previous
+                        </button>
+                        <button class="nav-btn next-btn" onclick="showNextVersion()" ${versionIndex <= 0 ? 'disabled' : ''}>
+                            Next →
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="version-calendar" id="versionCalendar">
+                <!-- Calendar will be rendered here -->
+            </div>
+        </div>
+    `;
+    
+    // Render the calendar snapshot
+    setTimeout(() => {
+        renderVersionCalendar(version.snapshot);
+    }, 100);
 }
 
 function getPublishedVersions() {
@@ -817,14 +939,39 @@ window.openEditModal = openEditModal;
 window.closeEditModal = closeEditModal;
 window.saveEdit = saveEdit;
 
-// Delete version function - only works if user has supervisor access
-window.deleteVersion = function(versionIndex) {
-    // Check supervisor access first
-    if (!hasSupervisorAccess) {
-        alert('Access denied. Please login through Supervisor Edit to delete versions.');
+function refreshPublishedScheduleDisplay() {
+    const calendarEl = document.getElementById('publishedCalendar');
+    if (!calendarEl) return;
+    
+    // Get published versions
+    const publishedVersions = getPublishedVersions();
+    
+    if (publishedVersions.length === 0) {
+        calendarEl.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">No published schedules yet. Go to Supervisor Edit to publish a schedule.</p>';
         return;
     }
     
+    // Show the most recent version by default
+    displayPublishedVersion(0, publishedVersions);
+}
+
+// Supervisor published schedule navigation functions
+window.showSupervisorPreviousVersion = function() {
+    const versions = getPublishedVersions();
+    if (currentVersionIndex < versions.length - 1) {
+        displaySupervisorPublishedVersion(currentVersionIndex + 1, versions);
+    }
+};
+
+window.showSupervisorNextVersion = function() {
+    const versions = getPublishedVersions();
+    if (currentVersionIndex > 0) {
+        displaySupervisorPublishedVersion(currentVersionIndex - 1, versions);
+    }
+};
+
+// Supervisor delete function
+window.deleteSupervisorVersion = function(versionIndex) {
     const versions = getPublishedVersions();
     
     if (versions.length <= 1) {
@@ -854,8 +1001,8 @@ window.deleteVersion = function(versionIndex) {
     // Update the current index
     currentVersionIndex = newVersionIndex;
     
-    // Refresh the display
-    displayPublishedVersion(newVersionIndex, versions);
+    // Refresh the supervisor display
+    displaySupervisorPublishedVersion(newVersionIndex, versions);
     
     console.log(`Deleted version ${versionIndex + 1}. Now showing version ${newVersionIndex + 1} of ${versions.length}`);
     alert(`Version deleted successfully. Now showing version ${newVersionIndex + 1} of ${versions.length}.`);
