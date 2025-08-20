@@ -239,6 +239,8 @@ function createEventsFromData(data) {
         const date = row[0];        
         const dayShiftData = row[16];   
         const nightShiftData = row[17];
+        const schoolData = row[18];     // Column S (index 18)
+        const offData = row[19];        // Column T (index 19)
         // Check if there's a custom color stored beyond the normal data range
         const customColor = row.length > 20 ? row[20] : ''; // Use index 20 for custom color to avoid conflicts
         
@@ -253,6 +255,16 @@ function createEventsFromData(data) {
             }
             if (nightShiftData) {
                 titleHTML += `<p>${nightShiftData}</p>`;
+            }
+            
+            // Add Off data with extra space
+            if (offData) {
+                titleHTML += `<p>&nbsp;</p><p>${offData}</p>`;
+            }
+            
+            // Add School data directly below Off
+            if (schoolData) {
+                titleHTML += `<p>${schoolData}</p>`;
             }
 
             if (titleHTML) {
@@ -318,7 +330,9 @@ function createEditableEvents(data) {
             event.extendedProps = {
                 dayShift: dateRow[16] || '',
                 nightShift: dateRow[17] || '',
-                customColor: dateRow[18] || ''
+                school: dateRow[18] || '',     // Column S
+                off: dateRow[19] || '',        // Column T
+                customColor: dateRow[20] || ''
             };
         }
         event.classNames = event.classNames || [];
