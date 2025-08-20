@@ -76,6 +76,11 @@ function showPage(pageId) {
     
     document.getElementById(pageId).classList.add('active');
     
+    // Reset supervisor access when leaving supervisor pages
+    if (pageId !== 'supervisorEditPage' && pageId !== 'supervisorViewPage' && pageId !== 'supervisorPage') {
+        hasSupervisorAccess = false;
+    }
+    
     if (pageId === 'schedulePage' && !calendar) {
         initializeCalendar();
     } else if (pageId === 'supervisorViewPage' && !supervisorViewCalendar) {
@@ -99,11 +104,15 @@ function closePasswordModal() {
     document.getElementById('passwordError').style.display = 'none';
 }
 
+// Track if user has supervisor access
+let hasSupervisorAccess = false;
+
 function checkPassword() {
     const password = document.getElementById('passwordInput').value;
     const correctPassword = 'chris';
     
     if (password === correctPassword) {
+        hasSupervisorAccess = true; // Grant supervisor access
         closePasswordModal();
         showPage('supervisorEditPage');
     } else {
@@ -670,6 +679,9 @@ function displayPublishedVersion(versionIndex, versions) {
     
     if (!version) return;
     
+    // Check if user has supervisor access for delete functionality
+    const showDeleteButton = hasSupervisorAccess && versions.length > 1;
+    
     // Create the version display
     calendarEl.innerHTML = `
         <div class="published-version-container">
@@ -688,11 +700,13 @@ function displayPublishedVersion(versionIndex, versions) {
                             Next →
                         </button>
                     </div>
+                    ${showDeleteButton ? `
                     <div class="version-actions">
-                        <button class="delete-btn" onclick="deleteVersion(${versionIndex})" ${versions.length <= 1 ? 'disabled' : ''} title="Delete this version">
+                        <button class="delete-btn" onclick="deleteVersion(${versionIndex})" title="Delete this version">
                             🗑️ Delete
                         </button>
                     </div>
+                    ` : ''}
                 </div>
             </div>
             <div class="version-calendar" id="versionCalendar">
@@ -803,8 +817,14 @@ window.openEditModal = openEditModal;
 window.closeEditModal = closeEditModal;
 window.saveEdit = saveEdit;
 
-// Delete version function
+// Delete version function - only works if user has supervisor access
 window.deleteVersion = function(versionIndex) {
+    // Check supervisor access first
+    if (!hasSupervisorAccess) {
+        alert('Access denied. Please login through Supervisor Edit to delete versions.');
+        return;
+    }
+    
     const versions = getPublishedVersions();
     
     if (versions.length <= 1) {
