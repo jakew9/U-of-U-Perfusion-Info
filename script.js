@@ -101,7 +101,7 @@ function closePasswordModal() {
 
 function checkPassword() {
     const password = document.getElementById('passwordInput').value;
-    const correctPassword = 'CHRIS';
+    const correctPassword = 'chris';
     
     if (password === correctPassword) {
         closePasswordModal();
@@ -683,8 +683,9 @@ function createMiniCalendar(containerId, data) {
 
 // Make toggleSchedule globally accessible
 window.toggleSchedule = function(index) {
+    console.log('Toggling schedule:', index);
     const content = document.getElementById(`schedule-content-${index}`);
-    const button = content?.nextElementSibling;
+    const button = content?.parentElement.querySelector('.expand-button');
     
     if (!content || !button) {
         console.error('Could not find schedule content or button for index:', index);
@@ -692,15 +693,19 @@ window.toggleSchedule = function(index) {
     }
     
     if (content.classList.contains('collapsed')) {
+        // Expand
         content.classList.remove('collapsed');
-        content.style.maxHeight = 'none';
+        content.style.maxHeight = '600px';
+        content.style.overflow = 'auto';
         button.textContent = 'Collapse View';
-        button.style.background = '#dc3545';
+        button.classList.add('expanded');
     } else {
+        // Collapse
         content.classList.add('collapsed');
-        content.style.maxHeight = '60px';
+        content.style.maxHeight = '80px';
+        content.style.overflow = 'hidden';
         button.textContent = 'View This Version';
-        button.style.background = '#667eea';
+        button.classList.remove('expanded');
     }
 };
 
