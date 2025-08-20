@@ -1,4 +1,4 @@
-body { 
+\body { 
     font-family: sans-serif; 
     margin: 0; 
     padding: 0; 
@@ -549,8 +549,13 @@ body {
     color: #333;
 }
  
-.edit-button:hover {
-    background-color: #e0a800;
+.manage-button {
+    background-color: #6f42c1;
+    color: white;
+}
+
+.manage-button:hover {
+    background-color: #5a359a;
 }
  
 /* Password Modal Styles */
