@@ -324,10 +324,22 @@ function captureCurrentMonthSnapshot() {
     
     // Get events for the current month being edited
     const events = createEventsFromData(editedScheduleData || []);
+    
+    // More robust month filtering - check both the calendar month and the actual event dates
     const monthEvents = events.filter(event => {
-        const eventDate = new Date(event.start + 'T00:00:00'); // Add time to avoid timezone issues
-        return eventDate.getFullYear() === year && eventDate.getMonth() === month;
+        const eventDate = new Date(event.start + 'T00:00:00');
+        const eventYear = eventDate.getFullYear();
+        const eventMonth = eventDate.getMonth();
+        
+        // Debug logging for the 1st of each month
+        if (eventDate.getDate() === 1) {
+            console.log(`Checking 1st: Event date: ${event.start}, Event year: ${eventYear}, Event month: ${eventMonth}, Target year: ${year}, Target month: ${month}`);
+        }
+        
+        return eventYear === year && eventMonth === month;
     });
+    
+    console.log(`Captured ${monthEvents.length} events for ${currentDate.toLocaleDateString('en-US', { month: 'long' })} ${year}`);
     
     return {
         month: currentDate.toLocaleDateString('en-US', { month: 'long' }),
@@ -908,8 +920,8 @@ function refreshPublishedScheduleDisplay() {
         return;
     }
     
-    // Show 3 months at a time with pagination
-    displayPublishedVersionsWithPagination(publishedVersions);
+    // Group versions by month and display them
+    displayGroupedPublishedSchedules(publishedVersions);
 }
 
 function refreshSupervisorPublishedScheduleDisplay() {
@@ -924,122 +936,140 @@ function refreshSupervisorPublishedScheduleDisplay() {
         return;
     }
     
-    // Show 3 months at a time with pagination for supervisor view
-    displaySupervisorPublishedVersionsWithPagination(publishedVersions);
+    // Group versions by month and display them for supervisor view
+    displayGroupedSupervisorPublishedSchedules(publishedVersions);
 }
 
-let currentPageIndex = 0;
-const versionsPerPage = 3;
+function groupVersionsByMonth(versions) {
+    const grouped = {};
+    
+    versions.forEach(version => {
+        const monthKey = `${version.year}-${version.month}`;
+        if (!grouped[monthKey]) {
+            grouped[monthKey] = {
+                month: version.month,
+                year: version.year,
+                versions: []
+            };
+        }
+        grouped[monthKey].versions.push(version);
+    });
+    
+    // Sort months by year and month (most recent first)
+    const sortedMonths = Object.values(grouped).sort((a, b) => {
+        if (a.year !== b.year) {
+            return b.year - a.year;
+        }
+        const monthA = new Date(`${a.month} 1, ${a.year}`).getMonth();
+        const monthB = new Date(`${b.month} 1, ${b.year}`).getMonth();
+        return monthB - monthA;
+    });
+    
+    // Sort versions within each month by timestamp (most recent first)
+    sortedMonths.forEach(monthGroup => {
+        monthGroup.versions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    });
+    
+    return sortedMonths;
+}
 
-function displayPublishedVersionsWithPagination(versions) {
+function displayGroupedPublishedSchedules(versions) {
     const calendarEl = document.getElementById('publishedCalendar');
-    if (!calendarEl || !versions || versions.length === 0) return;
+    if (!calendarEl) return;
     
-    const totalPages = Math.ceil(versions.length / versionsPerPage);
-    const startIndex = currentPageIndex * versionsPerPage;
-    const endIndex = Math.min(startIndex + versionsPerPage, versions.length);
-    const currentVersions = versions.slice(startIndex, endIndex);
+    const groupedMonths = groupVersionsByMonth(versions);
     
-    let html = `
-        <div class="published-versions-container">
-            <div class="pagination-header">
-                <h2>Published Schedules</h2>
-                <div class="pagination-controls">
-                    <button class="nav-btn" onclick="previousPage()" ${currentPageIndex <= 0 ? 'disabled' : ''}>
-                        ← Previous 3 Months
-                    </button>
-                    <span class="page-info">Page ${currentPageIndex + 1} of ${totalPages}</span>
-                    <button class="nav-btn" onclick="nextPage()" ${currentPageIndex >= totalPages - 1 ? 'disabled' : ''}>
-                        Next 3 Months →
-                    </button>
-                </div>
-            </div>
-    `;
+    let html = '<div class="grouped-schedules-container">';
     
-    currentVersions.forEach((version, index) => {
+    groupedMonths.forEach((monthGroup, monthIndex) => {
         html += `
-            <div class="version-display">
-                <div class="version-header">
-                    <div class="version-info">
-                        <h3>${version.month} ${version.year} Schedule</h3>
+            <div class="month-group">
+                <div class="month-header">
+                    <h2>${monthGroup.month} ${monthGroup.year}</h2>
+                    <p class="version-count">${monthGroup.versions.length} version${monthGroup.versions.length > 1 ? 's' : ''}</p>
+                </div>
+        `;
+        
+        monthGroup.versions.forEach((version, versionIndex) => {
+            html += `
+                <div class="version-section">
+                    <div class="version-info-header">
+                        <h3>Version ${versionIndex + 1}</h3>
                         <p class="version-meta">Published: ${new Date(version.timestamp).toLocaleString()}</p>
                     </div>
+                    <div class="version-calendar" id="monthCalendar_${monthIndex}_${versionIndex}">
+                        <!-- Calendar will be rendered here -->
+                    </div>
                 </div>
-                <div class="version-calendar" id="versionCalendar${startIndex + index}">
-                    <!-- Calendar will be rendered here -->
-                </div>
-            </div>
-        `;
+            `;
+        });
+        
+        html += '</div>';
     });
     
     html += '</div>';
     calendarEl.innerHTML = html;
     
     // Render each calendar
-    currentVersions.forEach((version, index) => {
-        setTimeout(() => {
-            renderVersionCalendarById(`versionCalendar${startIndex + index}`, version.snapshot);
-        }, 100);
+    groupedMonths.forEach((monthGroup, monthIndex) => {
+        monthGroup.versions.forEach((version, versionIndex) => {
+            setTimeout(() => {
+                renderVersionCalendarById(`monthCalendar_${monthIndex}_${versionIndex}`, version.snapshot);
+            }, 100);
+        });
     });
 }
 
-function displaySupervisorPublishedVersionsWithPagination(versions) {
+function displayGroupedSupervisorPublishedSchedules(versions) {
     const calendarEl = document.getElementById('supervisorPublishedCalendar');
-    if (!calendarEl || !versions || versions.length === 0) return;
+    if (!calendarEl) return;
     
-    const totalPages = Math.ceil(versions.length / versionsPerPage);
-    const startIndex = currentPageIndex * versionsPerPage;
-    const endIndex = Math.min(startIndex + versionsPerPage, versions.length);
-    const currentVersions = versions.slice(startIndex, endIndex);
+    const groupedMonths = groupVersionsByMonth(versions);
     
-    let html = `
-        <div class="published-versions-container">
-            <div class="pagination-header">
-                <h2>Published Schedules</h2>
-                <div class="pagination-controls">
-                    <button class="nav-btn" onclick="previousSupervisorPage()" ${currentPageIndex <= 0 ? 'disabled' : ''}>
-                        ← Previous 3 Months
-                    </button>
-                    <span class="page-info">Page ${currentPageIndex + 1} of ${totalPages}</span>
-                    <button class="nav-btn" onclick="nextSupervisorPage()" ${currentPageIndex >= totalPages - 1 ? 'disabled' : ''}>
-                        Next 3 Months →
-                    </button>
-                </div>
-            </div>
-    `;
+    let html = '<div class="grouped-schedules-container">';
     
-    currentVersions.forEach((version, index) => {
-        const versionIndex = startIndex + index;
+    groupedMonths.forEach((monthGroup, monthIndex) => {
         html += `
-            <div class="version-display">
-                <div class="version-header">
-                    <div class="version-info">
-                        <h3>${version.month} ${version.year} Schedule</h3>
+            <div class="month-group">
+                <div class="month-header">
+                    <h2>${monthGroup.month} ${monthGroup.year}</h2>
+                    <p class="version-count">${monthGroup.versions.length} version${monthGroup.versions.length > 1 ? 's' : ''}</p>
+                </div>
+        `;
+        
+        monthGroup.versions.forEach((version, versionIndex) => {
+            const actualVersionIndex = versions.findIndex(v => v.id === version.id);
+            html += `
+                <div class="version-section">
+                    <div class="version-info-header">
+                        <h3>Version ${versionIndex + 1}</h3>
                         <p class="version-meta">Published: ${new Date(version.timestamp).toLocaleString()}</p>
-                    </div>
-                    ${versions.length > 1 ? `
-                    <div class="version-actions">
-                        <button class="delete-btn" onclick="deleteSupervisorVersionFromPagination(${versionIndex})" title="Delete this version">
+                        ${versions.length > 1 ? `
+                        <button class="delete-btn small-delete" onclick="deleteSupervisorVersionFromGroup(${actualVersionIndex})" title="Delete this version">
                             🗑️ Delete
                         </button>
+                        ` : ''}
                     </div>
-                    ` : ''}
+                    <div class="version-calendar" id="supervisorMonthCalendar_${monthIndex}_${versionIndex}">
+                        <!-- Calendar will be rendered here -->
+                    </div>
                 </div>
-                <div class="version-calendar" id="supervisorVersionCalendar${versionIndex}">
-                    <!-- Calendar will be rendered here -->
-                </div>
-            </div>
-        `;
+            `;
+        });
+        
+        html += '</div>';
     });
     
     html += '</div>';
     calendarEl.innerHTML = html;
     
     // Render each calendar
-    currentVersions.forEach((version, index) => {
-        setTimeout(() => {
-            renderVersionCalendarById(`supervisorVersionCalendar${startIndex + index}`, version.snapshot);
-        }, 100);
+    groupedMonths.forEach((monthGroup, monthIndex) => {
+        monthGroup.versions.forEach((version, versionIndex) => {
+            setTimeout(() => {
+                renderVersionCalendarById(`supervisorMonthCalendar_${monthIndex}_${versionIndex}`, version.snapshot);
+            }, 100);
+        });
     });
 }
 
@@ -1056,74 +1086,6 @@ function renderVersionCalendarById(containerId, snapshotData) {
     container.innerHTML = `<div id="${containerId}Grid" class="snapshot-calendar-grid"></div>`;
     generateFullCalendarGrid(`${containerId}Grid`, snapshotData);
 }
-
-// Pagination functions
-window.previousPage = function() {
-    if (currentPageIndex > 0) {
-        currentPageIndex--;
-        const versions = getPublishedVersions();
-        displayPublishedVersionsWithPagination(versions);
-    }
-};
-
-window.nextPage = function() {
-    const versions = getPublishedVersions();
-    const totalPages = Math.ceil(versions.length / versionsPerPage);
-    if (currentPageIndex < totalPages - 1) {
-        currentPageIndex++;
-        displayPublishedVersionsWithPagination(versions);
-    }
-};
-
-window.previousSupervisorPage = function() {
-    if (currentPageIndex > 0) {
-        currentPageIndex--;
-        const versions = getPublishedVersions();
-        displaySupervisorPublishedVersionsWithPagination(versions);
-    }
-};
-
-window.nextSupervisorPage = function() {
-    const versions = getPublishedVersions();
-    const totalPages = Math.ceil(versions.length / versionsPerPage);
-    if (currentPageIndex < totalPages - 1) {
-        currentPageIndex++;
-        displaySupervisorPublishedVersionsWithPagination(versions);
-    }
-};
-
-window.deleteSupervisorVersionFromPagination = function(versionIndex) {
-    const versions = getPublishedVersions();
-    
-    if (versions.length <= 1) {
-        alert('Cannot delete the last remaining version.');
-        return;
-    }
-    
-    const version = versions[versionIndex];
-    const confirmDelete = confirm(`Are you sure you want to delete this version?\n\n${version.month} ${version.year} Schedule\nPublished: ${new Date(version.timestamp).toLocaleString()}\n\nThis action cannot be undone.`);
-    
-    if (!confirmDelete) {
-        return;
-    }
-    
-    // Remove the version from the array
-    versions.splice(versionIndex, 1);
-    
-    // Save updated versions back to localStorage
-    localStorage.setItem('perfusionPublishedVersions', JSON.stringify(versions));
-    
-    // Adjust current page if necessary
-    const totalPages = Math.ceil(versions.length / versionsPerPage);
-    if (currentPageIndex >= totalPages && currentPageIndex > 0) {
-        currentPageIndex = totalPages - 1;
-    }
-    
-    // Refresh the supervisor display
-    displaySupervisorPublishedVersionsWithPagination(versions);
-    
-    alert('Version deleted successfully.');
-};
 
 // Supervisor published schedule navigation functions
 window.showSupervisorPreviousVersion = function() {
