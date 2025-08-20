@@ -42,6 +42,11 @@
                 <p>Edit shift assignments and publish changes</p>
                 <button class="menu-button edit-button" onclick="requestEditAccess()">Edit Schedule</button>
             </div>
+            <div class="menu-card">
+                <h3>Manage Published</h3>
+                <p>View and delete published schedule versions</p>
+                <button class="menu-button manage-button" onclick="showPage('supervisorPublishedPage')">Manage Published</button>
+            </div>
         </div>
     </div>
 
@@ -69,6 +74,15 @@
             </div>
         </div>
         <div id='supervisorEditCalendar'></div>
+    </div>
+
+    <div id="supervisorPublishedPage" class="page">
+        <div class="page-header">
+            <button class="back-button" onclick="showPage('supervisorPage')">← Back</button>
+            <h1 class="page-title">Supervisor - Manage Published Schedules</h1>
+            <div class="last-updated" id="supervisorLastUpdated"></div>
+        </div>
+        <div id='supervisorPublishedCalendar'></div>
     </div>
 
     <div id="publishedSchedulePage" class="page">
