@@ -1,7 +1,7 @@
 // Configuration
 const apiKey = 'AIzaSyCyCEmSvunsn8C82AwhSyX5joXy2hstPls';
 const spreadsheetId = '1pKNJK3nvpcwQor1obQm1V6qiWfwOPmImV361Qfqul8E';
-const range = 'Sheet2!A13:T54'; 
+const range = 'Sheet2!A13:U54'; // Extended to include column U just in case 
 
 let calendar;
 let supervisorViewCalendar;
