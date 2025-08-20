@@ -200,7 +200,30 @@ function saveEdit() {
     closeEditModal();
 }
 
-function publishSchedule() {
+function clearEdits() {
+    // Show confirmation dialog
+    const confirmClear = confirm('Are you sure you want to clear all edits and revert to the original Google Sheets data? This action cannot be undone.');
+    
+    if (!confirmClear) {
+        return; // User cancelled
+    }
+    
+    // Store the current date being viewed before clearing
+    const currentViewDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
+    
+    // Revert editedScheduleData back to the original Google Sheets data
+    editedScheduleData = JSON.parse(JSON.stringify(originalScheduleData));
+    
+    // Clear any saved edits from localStorage
+    localStorage.removeItem('perfusionScheduleEdits');
+    
+    // Refresh the calendar with original data
+    supervisorEditCalendar.destroy();
+    initializeSupervisorEditCalendarFromData(currentViewDate);
+    
+    console.log('Edits cleared - reverted to original Google Sheets data');
+    alert('All edits have been cleared. Calendar reverted to original Google Sheets data.');
+}
     // Get the current month being viewed in the edit calendar
     const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
     const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'long' });
