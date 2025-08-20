@@ -640,138 +640,80 @@ body {
     color: #333;
     font-weight: bold;
 }
- 
-/* Schedule Stack Styles - Cleaner Layout */
-.schedule-stack {
-    position: relative;
-    max-width: 100%;
-    margin: 0 auto;
-    padding: 20px 0;
-    min-height: 600px;
+
+/* Published Schedule Version Navigation Styles */
+.published-version-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
-.schedule-paper {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-    position: relative;
-    transition: all 0.3s ease;
-    border: 1px solid #ddd;
-    width: 100%;
-}
-
-.schedule-paper:hover {
-    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-}
-
-/* Current/top schedule */
-.schedule-paper.current {
-    z-index: 5;
-    position: relative;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-}
-
-/* Previous schedules - clean tabs on left */
-.schedule-paper.previous-1 {
-    z-index: 4;
-    position: absolute;
-    top: 0;
-    left: -80px;
-    width: calc(100% + 80px);
-}
-
-.schedule-paper.previous-2 {
-    z-index: 3;
-    position: absolute;
-    top: 0;
-    left: -90px;
-    width: calc(100% + 90px);
-}
-
-.schedule-paper.previous-3 {
-    z-index: 2;
-    position: absolute;
-    top: 0;
-    left: -100px;
-    width: calc(100% + 100px);
-}
-
-/* Clean tab design */
-.schedule-tab {
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    color: #495057;
-    padding: 15px 5px;
-    border-radius: 8px 0 0 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.75em;
-    font-weight: 600;
-    box-shadow: -3px 0 10px rgba(0,0,0,0.1);
-    width: 80px;
-    text-align: center;
-    border: 1px solid #dee2e6;
-    border-right: none;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-}
-
-.schedule-tab:hover {
-    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-    transform: translateY(-50%) translateX(-3px);
-    box-shadow: -5px 0 15px rgba(0,0,0,0.15);
-}
-
-.schedule-header {
+.version-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     padding: 20px;
-    border-radius: 8px 8px 0 0;
-    text-align: center;
+    border-radius: 15px 15px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
 }
 
-.schedule-header.previous {
-    background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
-}
-
-.schedule-title {
-    font-size: 1.5em;
+.version-info h2 {
+    margin: 0 0 8px 0;
+    font-size: 1.8em;
     font-weight: 600;
-    margin: 0 0 5px 0;
 }
 
-.schedule-date {
+.version-meta {
+    margin: 0 0 4px 0;
     font-size: 0.9em;
     opacity: 0.9;
 }
 
-.schedule-content {
-    padding: 0;
-    min-height: 500px;
+.version-number {
+    margin: 0;
+    font-size: 0.85em;
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+.version-navigation {
+    display: flex;
+    gap: 10px;
+}
+
+.nav-btn {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.version-calendar {
+    flex: 1;
+    background: white;
+    border-radius: 0 0 15px 15px;
     overflow: hidden;
-}
-
-.schedule-content.collapsed {
-    display: none;
-}
-
-/* When previous schedule is expanded */
-.schedule-paper.previous-expanded {
-    left: 0 !important;
-    width: 100% !important;
-    z-index: 6 !important;
-    margin-top: 20px;
-}
-
-.schedule-paper.previous-expanded .schedule-content {
-    display: block !important;
-}
-
-.schedule-paper.previous-expanded .schedule-tab {
-    display: none;
+    min-height: 0;
 }
 
 /* Calendar Snapshot Styles */
@@ -889,10 +831,24 @@ body {
     color: white;
 }
 
-/* Remove old snapshot styles */
-.snapshot-header, .snapshot-date, .snapshot-grid, .calendar-note, .event-summary {
-    display: none;
+/* Responsive Version Navigation */
+@media (max-width: 768px) {
+    .version-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .version-navigation {
+        justify-content: center;
+    }
+    
+    .nav-btn {
+        padding: 8px 16px;
+        font-size: 0.8em;
+    }
 }
+
 .content-card {
     background: white;
     padding: 2rem;
