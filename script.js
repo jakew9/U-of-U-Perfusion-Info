@@ -263,13 +263,17 @@ function createEventsFromData(data) {
                 titleHTML += `<div>Night: ${nightShiftData.trim()}</div>`;
             }
             
-            // Add blank line before Off section (only if there's Off data)
-            if (offData && offData.trim()) {
+            // Add blank line before Off/School section (if there's either Off or School data)
+            if ((offData && offData.trim()) || (schoolData && schoolData.trim())) {
                 titleHTML += `<div><br></div>`;
+            }
+            
+            // Add Off data
+            if (offData && offData.trim()) {
                 titleHTML += `<div style="color:#d32f2f;">Off: ${offData.trim()}</div>`;
             }
             
-            // Add School assignments directly below Off (no extra space)
+            // Add School assignments
             if (schoolData && schoolData.trim()) {
                 titleHTML += `<div style="color:#1976d2;">School: ${schoolData.trim()}</div>`;
             }
