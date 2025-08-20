@@ -11,6 +11,29 @@ let originalScheduleData = [];
 let editedScheduleData = [];
 let currentEditDate = null;
 
+// --- Page and Modal Management ---
+
+// Page Navigation - MUST BE DEFINED FIRST
+function showPage(pageId) {
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(page => page.classList.remove('active'));
+    
+    document.getElementById(pageId).classList.add('active');
+    
+    if (pageId === 'schedulePage' && !calendar) {
+        initializeCalendar();
+    } else if (pageId === 'supervisorViewPage' && !supervisorViewCalendar) {
+        initializeSupervisorViewCalendar();
+    } else if (pageId === 'supervisorEditPage' && !supervisorEditCalendar) {
+        initializeSupervisorEditCalendar();
+    } else if (pageId === 'publishedSchedulePage' && !publishedCalendar) {
+        initializePublishedCalendar();
+    }
+}
+
+// Make showPage globally accessible
+window.showPage = showPage;
+
 // --- Data Management Functions ---
 
 // Load saved data on page load and set editedScheduleData properly
@@ -113,6 +136,11 @@ function checkPassword() {
         document.getElementById('passwordInput').focus();
     }
 }
+
+// Make functions globally accessible for onclick handlers
+window.requestEditAccess = requestEditAccess;
+window.closePasswordModal = closePasswordModal;
+window.checkPassword = checkPassword;
 
 // Allow Enter key to submit password
 document.addEventListener('DOMContentLoaded', function() {
@@ -224,6 +252,13 @@ function clearEdits() {
     console.log('Edits cleared - reverted to original Google Sheets data');
     alert('All edits have been cleared. Calendar reverted to original Google Sheets data.');
 }
+
+// Make functions globally accessible for onclick handlers
+window.clearEdits = clearEdits;
+window.publishSchedule = publishSchedule;
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+window.saveEdit = saveEdit;
     // Get the current month being viewed in the edit calendar
     const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
     const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'long' });
