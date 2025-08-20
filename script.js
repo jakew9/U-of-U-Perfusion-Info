@@ -754,34 +754,35 @@ function createSnapshotView(containerId, snapshotData) {
     const container = document.getElementById(containerId);
     if (!container) return;
     
-    if (!snapshotData) {
-        container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No snapshot available</p>';
+    if (!snapshotData || !snapshotData.events || snapshotData.events.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No calendar data available</p>';
         return;
     }
     
-    // Create a styled calendar snapshot
+    // Create a full calendar view from the snapshot
     container.innerHTML = `
-        <div class="snapshot-header">
+        <div class="snapshot-calendar-header">
             <h2>${snapshotData.month} ${snapshotData.year}</h2>
-            <div class="snapshot-date">Captured: ${new Date(snapshotData.capturedAt).toLocaleString()}</div>
         </div>
-        <div class="snapshot-grid" id="grid-${containerId}">
+        <div class="snapshot-calendar-grid" id="grid-${containerId}">
             <!-- Calendar grid will be generated here -->
         </div>
     `;
     
-    // Generate a simple calendar grid
-    generateSnapshotGrid(`grid-${containerId}`, snapshotData);
+    // Generate the actual calendar grid
+    generateFullCalendarGrid(`grid-${containerId}`, snapshotData);
 }
 
-function generateSnapshotGrid(gridId, snapshotData) {
+function generateFullCalendarGrid(gridId, snapshotData) {
     const grid = document.getElementById(gridId);
     if (!grid) return;
     
-    // Create a simple calendar representation
     const events = snapshotData.events || [];
-    const eventsByDate = {};
+    const year = snapshotData.year || new Date().getFullYear();
+    const monthIndex = new Date(`${snapshotData.month} 1, ${year}`).getMonth();
     
+    // Create event map by date
+    const eventsByDate = {};
     events.forEach(event => {
         const date = event.start;
         if (!eventsByDate[date]) {
@@ -790,29 +791,57 @@ function generateSnapshotGrid(gridId, snapshotData) {
         eventsByDate[date].push(event);
     });
     
-    // Generate calendar for the month
-    const year = snapshotData.year || new Date().getFullYear();
-    const monthIndex = new Date(`${snapshotData.month} 1, ${year}`).getMonth();
+    // Generate calendar grid
+    const firstDay = new Date(year, monthIndex, 1);
+    const lastDay = new Date(year, monthIndex + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start from Sunday
     
-    grid.innerHTML = `
-        <div class="snapshot-calendar">
-            <div class="calendar-note">
-                📅 ${snapshotData.month} ${year} Schedule Snapshot
-                <br>
-                <small>${Object.keys(eventsByDate).length} scheduled days captured</small>
+    let calendarHTML = `
+        <div class="calendar-grid">
+            <div class="calendar-header">
+                <div class="day-header">Sun</div>
+                <div class="day-header">Mon</div>
+                <div class="day-header">Tue</div>
+                <div class="day-header">Wed</div>
+                <div class="day-header">Thu</div>
+                <div class="day-header">Fri</div>
+                <div class="day-header">Sat</div>
             </div>
-            <div class="event-summary">
-                ${events.length > 0 ? 
-                    `<strong>Schedule includes:</strong><br>` +
-                    `• Day and Night shift assignments<br>` +
-                    `• Off-duty staff tracking<br>` +
-                    `• School assignment schedules<br>` +
-                    `<small>Complete schedule data preserved in snapshot</small>`
-                    : 'No events in this snapshot'
-                }
+            <div class="calendar-body">
+    `;
+    
+    // Generate 6 weeks of calendar
+    for (let week = 0; week < 6; week++) {
+        for (let day = 0; day < 7; day++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + (week * 7) + day);
+            
+            const dateStr = currentDate.toISOString().split('T')[0];
+            const isCurrentMonth = currentDate.getMonth() === monthIndex;
+            const dayEvents = eventsByDate[dateStr] || [];
+            
+            calendarHTML += `
+                <div class="calendar-day ${!isCurrentMonth ? 'other-month' : ''}">
+                    <div class="day-number">${currentDate.getDate()}</div>
+                    <div class="day-events">
+                        ${dayEvents.map(event => `
+                            <div class="event-content" style="background-color: ${event.backgroundColor || '#ccc'}; color: ${event.textColor || '#000'};">
+                                ${event.title || ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    calendarHTML += `
             </div>
         </div>
     `;
+    
+    grid.innerHTML = calendarHTML;
 }
 
 // Make toggleSchedule globally accessible
