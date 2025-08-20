@@ -101,10 +101,23 @@ function requestEditAccess() {
     document.getElementById('passwordInput').focus();
 }
 
+// New function for manage published access
+function requestManagePublishedAccess() {
+    if (hasSupervisorAccess) {
+        showPage('supervisorPublishedPage');
+    } else {
+        document.getElementById('passwordModal').style.display = 'block';
+        document.getElementById('passwordInput').focus();
+        // Set a flag to know we're accessing manage published after password
+        sessionStorage.setItem('pendingPageAfterPassword', 'supervisorPublishedPage');
+    }
+}
+
 function closePasswordModal() {
     document.getElementById('passwordModal').style.display = 'none';
     document.getElementById('passwordInput').value = '';
     document.getElementById('passwordError').style.display = 'none';
+    sessionStorage.removeItem('pendingPageAfterPassword');
 }
 
 // Track if user has supervisor access
@@ -117,7 +130,14 @@ function checkPassword() {
     if (password === correctPassword) {
         hasSupervisorAccess = true; // Grant supervisor access
         closePasswordModal();
-        showPage('supervisorEditPage');
+        
+        // Check if we have a pending page to navigate to
+        const pendingPage = sessionStorage.getItem('pendingPageAfterPassword');
+        if (pendingPage) {
+            showPage(pendingPage);
+        } else {
+            showPage('supervisorEditPage');
+        }
     } else {
         document.getElementById('passwordError').textContent = 'Incorrect password. Please try again.';
         document.getElementById('passwordError').style.display = 'block';
@@ -343,7 +363,6 @@ function parseDate(dateString) {
     const day = date.getDate().toString().padStart(2, '0');
     
     const result = `${year}-${month}-${day}`;
-    console.log(`parseDate: "${dateString}" -> "${result}"`);
     return result;
 }
 
@@ -367,14 +386,6 @@ function createEventsFromData(data) {
         const customColor = row.length > 20 ? row[20] : ''; // Use index 20 for custom color to avoid conflicts
         
         const formattedDate = parseDate(date);
-        
-        // Special debug for September 1st and nearby dates
-        if (formattedDate && (formattedDate.includes('2025-09-01') || formattedDate.includes('2025-08-31') || formattedDate.includes('2025-09-02'))) {
-            console.log(`ROW ${rowIndex}: Raw date: "${date}", Formatted: "${formattedDate}"`);
-            console.log(`Day shift: "${dayShiftData}", Night shift: "${nightShiftData}"`);
-            console.log(`School: "${schoolData}", Off: "${offData}"`);
-            console.log(`Full row:`, row);
-        }
         
         if (formattedDate) {
             const dayOfWeek = getCorrectDayOfWeek(formattedDate);
@@ -405,36 +416,25 @@ function createEventsFromData(data) {
                 titleHTML += `<div style="color:#FFFFFF; background-color:#0066CC; padding:1px 2px; border-radius:2px; font-weight:bold;">School: ${schoolData.trim()}</div>`;
             }
 
-            // Create event even if no shift data (for September 1st debugging)
-            if (titleHTML || formattedDate === '2025-09-01') {
-                if (!titleHTML) {
-                    titleHTML = '<div style="color:#999;">No assignments</div>';
-                }
-                
+            // Create event if there's any content
+            if (titleHTML) {
                 const eventData = {
                     title: titleHTML,
                     start: formattedDate,
                     allDay: true
                 };
                 
-                // Debug: log color decisions
-                if (formattedDate === '2025-09-01') {
-                    console.log(`Creating event for Sept 1st: Custom Color: ${customColor}, Day of Week: ${dayOfWeek}`);
-                }
-                
                 // Check for custom color first (only if it's a valid color, not employee initials)
                 if (customColor && customColor.startsWith('#')) {
                     eventData.backgroundColor = customColor;
                     eventData.borderColor = customColor;
                     eventData.textColor = '#ffffff';
-                    console.log(`Applied custom color: ${customColor}`);
                 } else if (dayOfWeek === 0 || dayOfWeek === 6) {
                     // Weekend styling
                     eventData.backgroundColor = 'transparent';
                     eventData.borderColor = 'transparent';
                     eventData.textColor = '#000000';
                     eventData.classNames = ['weekend-event'];
-                    console.log('Applied weekend styling');
                 } else {
                     // Weekday automatic color coding
                     const allShifts = [dayShiftData, nightShiftData].filter(Boolean).join('/');
@@ -454,7 +454,6 @@ function createEventsFromData(data) {
                         eventData.borderColor = '#B22222';
                         eventData.textColor = '#ffffff';
                     }
-                    console.log(`Applied auto color for ${employeeCount} employees: ${eventData.backgroundColor}`);
                 }
                 
                 events.push(eventData);
@@ -462,7 +461,6 @@ function createEventsFromData(data) {
         }
     });
     
-    console.log(`Created ${events.length} total events`);
     return events;
 }
 
@@ -792,57 +790,6 @@ function getPublishedVersions() {
 
 let currentVersionIndex = 0;
 
-function displayPublishedVersion(versionIndex, versions) {
-    const calendarEl = document.getElementById('publishedCalendar');
-    if (!calendarEl || !versions || versions.length === 0) return;
-    
-    currentVersionIndex = versionIndex;
-    const version = versions[versionIndex];
-    
-    if (!version) return;
-    
-    // Check if user has supervisor access for delete functionality
-    const showDeleteButton = hasSupervisorAccess && versions.length > 1;
-    
-    // Create the version display
-    calendarEl.innerHTML = `
-        <div class="published-version-container">
-            <div class="version-header">
-                <div class="version-info">
-                    <h2>${version.month} ${version.year} Schedule</h2>
-                    <p class="version-meta">Published: ${new Date(version.timestamp).toLocaleString()}</p>
-                    <p class="version-number">Version ${versionIndex + 1} of ${versions.length}</p>
-                </div>
-                <div class="version-controls">
-                    <div class="version-navigation">
-                        <button class="nav-btn prev-btn" onclick="showPreviousVersion()" ${versionIndex >= versions.length - 1 ? 'disabled' : ''}>
-                            ← Previous
-                        </button>
-                        <button class="nav-btn next-btn" onclick="showNextVersion()" ${versionIndex <= 0 ? 'disabled' : ''}>
-                            Next →
-                        </button>
-                    </div>
-                    ${showDeleteButton ? `
-                    <div class="version-actions">
-                        <button class="delete-btn" onclick="deleteVersion(${versionIndex})" title="Delete this version">
-                            🗑️ Delete
-                        </button>
-                    </div>
-                    ` : ''}
-                </div>
-            </div>
-            <div class="version-calendar" id="versionCalendar">
-                <!-- Calendar will be rendered here -->
-            </div>
-        </div>
-    `;
-    
-    // Render the calendar snapshot
-    setTimeout(() => {
-        renderVersionCalendar(version.snapshot);
-    }, 100);
-}
-
 function renderVersionCalendar(snapshotData) {
     const container = document.getElementById('versionCalendar');
     if (!container || !snapshotData) return;
@@ -931,6 +878,7 @@ function generateFullCalendarGrid(gridId, snapshotData) {
 // Make all functions globally accessible for onclick handlers
 window.showPage = showPage;
 window.requestEditAccess = requestEditAccess;
+window.requestManagePublishedAccess = requestManagePublishedAccess;
 window.closePasswordModal = closePasswordModal;
 window.checkPassword = checkPassword;
 window.clearEdits = clearEdits;
