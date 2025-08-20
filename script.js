@@ -252,23 +252,23 @@ function createEventsFromData(data) {
 
             // Add Day shift
             if (dayShiftData && dayShiftData.trim()) {
-                titleHTML += `<p style="margin:0; line-height:1.1;">Day: ${dayShiftData.trim()}</p>`;
+                titleHTML += `<div>Day: ${dayShiftData.trim()}</div>`;
             }
             
             // Add Night shift
             if (nightShiftData && nightShiftData.trim()) {
-                titleHTML += `<p style="margin:0; line-height:1.1;">Night: ${nightShiftData.trim()}</p>`;
+                titleHTML += `<div>Night: ${nightShiftData.trim()}</div>`;
             }
             
             // Add blank line before Off section (only if there's Off data)
             if (offData && offData.trim()) {
-                titleHTML += `<p style="margin:0; line-height:1.1;">&nbsp;</p>`;
-                titleHTML += `<p style="margin:0; line-height:1.1; color:#d32f2f;">Off: ${offData.trim()}</p>`;
+                titleHTML += `<div><br></div>`;
+                titleHTML += `<div style="color:#d32f2f;">Off: ${offData.trim()}</div>`;
             }
             
             // Add School assignments directly below Off (no extra space)
             if (schoolData && schoolData.trim()) {
-                titleHTML += `<p style="margin:0; line-height:1.1; color:#1976d2;">School: ${schoolData.trim()}</p>`;
+                titleHTML += `<div style="color:#1976d2;">School: ${schoolData.trim()}</div>`;
             }
 
             if (titleHTML) {
