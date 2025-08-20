@@ -11,29 +11,6 @@ let originalScheduleData = [];
 let editedScheduleData = [];
 let currentEditDate = null;
 
-// --- Page and Modal Management ---
-
-// Page Navigation - MUST BE DEFINED FIRST
-function showPage(pageId) {
-    const pages = document.querySelectorAll('.page');
-    pages.forEach(page => page.classList.remove('active'));
-    
-    document.getElementById(pageId).classList.add('active');
-    
-    if (pageId === 'schedulePage' && !calendar) {
-        initializeCalendar();
-    } else if (pageId === 'supervisorViewPage' && !supervisorViewCalendar) {
-        initializeSupervisorViewCalendar();
-    } else if (pageId === 'supervisorEditPage' && !supervisorEditCalendar) {
-        initializeSupervisorEditCalendar();
-    } else if (pageId === 'publishedSchedulePage' && !publishedCalendar) {
-        initializePublishedCalendar();
-    }
-}
-
-// Make showPage globally accessible
-window.showPage = showPage;
-
 // --- Data Management Functions ---
 
 // Load saved data on page load and set editedScheduleData properly
@@ -137,20 +114,6 @@ function checkPassword() {
     }
 }
 
-// Make functions globally accessible for onclick handlers
-window.requestEditAccess = requestEditAccess;
-window.closePasswordModal = closePasswordModal;
-window.checkPassword = checkPassword;
-
-// Allow Enter key to submit password
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('passwordInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            checkPassword();
-        }
-    });
-});
-
 // Edit modal functions
 function openEditModal(dateStr, dayShift, nightShift) {
     currentEditDate = dateStr;
@@ -253,12 +216,7 @@ function clearEdits() {
     alert('All edits have been cleared. Calendar reverted to original Google Sheets data.');
 }
 
-// Make functions globally accessible for onclick handlers
-window.clearEdits = clearEdits;
-window.publishSchedule = publishSchedule;
-window.openEditModal = openEditModal;
-window.closeEditModal = closeEditModal;
-window.saveEdit = saveEdit;
+function publishSchedule() {
     // Get the current month being viewed in the edit calendar
     const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
     const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'long' });
@@ -328,53 +286,9 @@ function captureCurrentMonthSnapshot() {
     };
 }
 
-function createCalendarSnapshot(data) {
-    // Create a simplified calendar representation
-    const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    
-    // Get events for the current month
-    const events = createEventsFromData(data || []);
-    const monthEvents = events.filter(event => {
-        const eventDate = new Date(event.start);
-        return eventDate.getFullYear() === year && eventDate.getMonth() === month;
-    });
-    
-    return {
-        month: getCurrentMonthName(),
-        year: year,
-        events: monthEvents,
-        capturedAt: new Date().toISOString()
-    };
-}
-
 function getCurrentMonthName() {
     const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
     return currentDate.toLocaleDateString('en-US', { month: 'long' });
-}
-
-function saveToHistory(publishedData) {
-    try {
-        let history = [];
-        const existingHistory = localStorage.getItem('perfusionScheduleHistory');
-        if (existingHistory) {
-            history = JSON.parse(existingHistory);
-        }
-        
-        // Add current published schedule to history
-        history.unshift(publishedData); // Add to beginning
-        
-        // Keep only last 5 versions
-        if (history.length > 5) {
-            history = history.slice(0, 5);
-        }
-        
-        localStorage.setItem('perfusionScheduleHistory', JSON.stringify(history));
-        console.log('Saved to schedule history');
-    } catch (error) {
-        console.error('Error saving to history:', error);
-    }
 }
 
 // --- Helper Functions ---
@@ -768,179 +682,6 @@ function renderVersionCalendar(snapshotData) {
     generateFullCalendarGrid('calendarGrid', snapshotData);
 }
 
-// Navigation functions
-window.showPreviousVersion = function() {
-    const versions = getPublishedVersions();
-    if (currentVersionIndex < versions.length - 1) {
-        displayPublishedVersion(currentVersionIndex + 1, versions);
-    }
-};
-
-window.showNextVersion = function() {
-    const versions = getPublishedVersions();
-    if (currentVersionIndex > 0) {
-        displayPublishedVersion(currentVersionIndex - 1, versions);
-    }
-};
-
-function createScheduleStack(container) {
-    // Get all schedule versions from localStorage
-    const scheduleHistory = getScheduleHistory();
-    
-    container.innerHTML = '<div class="schedule-stack"></div>';
-    const stackContainer = container.querySelector('.schedule-stack');
-    
-    scheduleHistory.forEach((schedule, index) => {
-        const paper = createSchedulePaper(schedule, index);
-        stackContainer.appendChild(paper);
-    });
-}
-
-function getScheduleHistory() {
-    const history = [];
-    
-    // Get current published schedule
-    const published = localStorage.getItem('perfusionPublishedSchedule');
-    if (published) {
-        const publishedData = JSON.parse(published);
-        history.push({
-            type: 'current',
-            title: `${publishedData.month || 'Current'} ${publishedData.year || new Date().getFullYear()} Schedule`,
-            date: new Date(publishedData.timestamp).toLocaleDateString(),
-            time: new Date(publishedData.timestamp).toLocaleTimeString(),
-            snapshot: publishedData.snapshot || null,
-            month: publishedData.month || 'Current',
-            timestamp: publishedData.timestamp
-        });
-    }
-    
-    // Get previous versions from history
-    const previousVersions = localStorage.getItem('perfusionScheduleHistory');
-    if (previousVersions) {
-        const versions = JSON.parse(previousVersions);
-        versions.forEach((version, index) => {
-            history.push({
-                type: 'previous',
-                title: `${version.month || 'Previous'} ${version.year || new Date().getFullYear()} - Version ${index + 1}`,
-                date: new Date(version.timestamp).toLocaleDateString(),
-                time: new Date(version.timestamp).toLocaleTimeString(),
-                snapshot: version.snapshot || null,
-                month: version.month || `Previous #${index + 1}`,
-                timestamp: version.timestamp
-            });
-        });
-    }
-    
-    // Create sample previous schedules if none exist (for demo purposes)
-    if (history.length === 1) {
-        // Create 2 sample previous versions
-        for (let i = 1; i <= 2; i++) {
-            const sampleDate = new Date();
-            sampleDate.setDate(sampleDate.getDate() - (i * 7));
-            history.push({
-                type: 'previous',
-                title: `September 2025 - Version ${i}`,
-                date: sampleDate.toLocaleDateString(),
-                time: sampleDate.toLocaleTimeString(),
-                snapshot: createSampleSnapshot(),
-                month: 'September',
-                timestamp: sampleDate.toISOString()
-            });
-        }
-    }
-    
-    return history;
-}
-
-function createSampleSnapshot() {
-    return {
-        month: 'September',
-        year: 2025,
-        events: [],
-        capturedAt: new Date().toISOString()
-    };
-}
-
-function createSchedulePaper(schedule, index) {
-    const paper = document.createElement('div');
-    paper.className = `schedule-paper ${index === 0 ? 'current' : `previous-${index}`}`;
-    
-    const isCurrent = schedule.type === 'current';
-    
-    if (isCurrent) {
-        // Current schedule - show snapshot
-        paper.innerHTML = `
-            <div class="schedule-header">
-                <div>
-                    <h3 class="schedule-title">${schedule.title}</h3>
-                    <div class="schedule-date">${schedule.date} at ${schedule.time}</div>
-                </div>
-                <span class="status-badge status-current">Current</span>
-            </div>
-            <div class="schedule-content" id="schedule-content-${index}">
-                <div id="snapshot-${index}" class="calendar-snapshot"></div>
-            </div>
-        `;
-    } else {
-        // Previous schedule - just a tab and hidden snapshot
-        const shortDate = new Date(schedule.timestamp).toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric' 
-        });
-        const shortTime = new Date(schedule.timestamp).toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
-            minute: '2-digit',
-            hour12: true 
-        });
-        
-        paper.innerHTML = `
-            <div class="schedule-tab" onclick="toggleSchedule(${index})">
-                ${schedule.month}<br>${shortDate}<br>${shortTime}
-            </div>
-            <div class="schedule-header previous" style="display: none;">
-                <div>
-                    <h3 class="schedule-title">${schedule.title}</h3>
-                    <div class="schedule-date">${schedule.date} at ${schedule.time}</div>
-                </div>
-                <span class="status-badge status-previous">Previous</span>
-            </div>
-            <div class="schedule-content collapsed" id="schedule-content-${index}" style="display: none;">
-                <div id="snapshot-${index}" class="calendar-snapshot"></div>
-            </div>
-        `;
-    }
-    
-    // Create snapshot view instead of live calendar
-    setTimeout(() => {
-        createSnapshotView(`snapshot-${index}`, schedule.snapshot);
-    }, 100);
-    
-    return paper;
-}
-
-function createSnapshotView(containerId, snapshotData) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    if (!snapshotData || !snapshotData.events || snapshotData.events.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No calendar data available</p>';
-        return;
-    }
-    
-    // Create a full calendar view from the snapshot
-    container.innerHTML = `
-        <div class="snapshot-calendar-header">
-            <h2>${snapshotData.month} ${snapshotData.year}</h2>
-        </div>
-        <div class="snapshot-calendar-grid" id="grid-${containerId}">
-            <!-- Calendar grid will be generated here -->
-        </div>
-    `;
-    
-    // Generate the actual calendar grid
-    generateFullCalendarGrid(`grid-${containerId}`, snapshotData);
-}
-
 function generateFullCalendarGrid(gridId, snapshotData) {
     const grid = document.getElementById(gridId);
     if (!grid) return;
@@ -1012,60 +753,40 @@ function generateFullCalendarGrid(gridId, snapshotData) {
     grid.innerHTML = calendarHTML;
 }
 
-// Make toggleSchedule globally accessible
-window.toggleSchedule = function(index) {
-    console.log('Toggling schedule:', index);
-    const paper = document.querySelector(`.schedule-paper.previous-${index}`);
-    const tab = paper?.querySelector('.schedule-tab');
-    const header = paper?.querySelector('.schedule-header');
-    const content = paper?.querySelector('.schedule-content');
-    
-    if (!paper || !content) {
-        console.error('Could not find schedule elements for index:', index);
-        return;
-    }
-    
-    if (paper.classList.contains('previous-expanded')) {
-        // Collapse back to tab
-        paper.classList.remove('previous-expanded');
-        tab.style.display = 'block';
-        header.style.display = 'none';
-        content.style.display = 'none';
-    } else {
-        // Collapse any other expanded papers first
-        document.querySelectorAll('.schedule-paper.previous-expanded').forEach(p => {
-            const pIndex = p.className.match(/previous-(\d+)/)?.[1];
-            if (pIndex && pIndex !== index.toString()) {
-                window.toggleSchedule(parseInt(pIndex));
-            }
-        });
-        
-        // Expand this one
-        paper.classList.add('previous-expanded');
-        tab.style.display = 'none';
-        header.style.display = 'flex';
-        content.style.display = 'block';
+// Make all functions globally accessible for onclick handlers
+window.showPage = showPage;
+window.requestEditAccess = requestEditAccess;
+window.closePasswordModal = closePasswordModal;
+window.checkPassword = checkPassword;
+window.clearEdits = clearEdits;
+window.publishSchedule = publishSchedule;
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+window.saveEdit = saveEdit;
+
+// Navigation functions for published versions
+window.showPreviousVersion = function() {
+    const versions = getPublishedVersions();
+    if (currentVersionIndex < versions.length - 1) {
+        displayPublishedVersion(currentVersionIndex + 1, versions);
     }
 };
 
-function initializePublishedCalendarFromData() {
-    const calendarEl = document.getElementById('publishedCalendar');
-    const events = createEventsFromData(editedScheduleData);
+window.showNextVersion = function() {
+    const versions = getPublishedVersions();
+    if (currentVersionIndex > 0) {
+        displayPublishedVersion(currentVersionIndex - 1, versions);
+    }
+};
 
-    publishedCalendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,dayGridWeek,dayGridDay'
-        },
-        showNonCurrentDates: false,
-        fixedWeekCount: false,
-        events: events,
-        eventContent: function(arg) {
-            return { html: arg.event.title };
-        }
-    });
-
-    publishedCalendar.render();
-}
+// Allow Enter key to submit password
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordInput = document.getElementById('passwordInput');
+    if (passwordInput) {
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+    }
+});
