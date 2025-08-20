@@ -72,24 +72,9 @@
         <div class="page-header">
             <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
             <h1 class="page-title">Published Schedule</h1>
-            <!-- ADDED: Previous Version Button -->
-            <button class="previous-version-button" id="previousVersionBtn" onclick="showPreviousVersion()" style="display: none;">
-                <span>Previous Version</span>
-                <span class="version-indicator" id="previousVersionNumber">V1</span>
-            </button>
             <div class="last-updated" id="lastUpdated"></div>
         </div>
         <div id='publishedCalendar'></div>
-    </div>
-
-    <!-- ADDED: Previous Schedule Page -->
-    <div id="previousSchedulePage" class="page">
-        <div class="page-header">
-            <button class="back-button" onclick="showPage('publishedSchedulePage')">← Back to Current</button>
-            <h1 class="page-title" id="previousSchedulePageTitle">Previous Schedule</h1>
-            <div class="last-updated" id="previousLastUpdated"></div>
-        </div>
-        <div id='previousCalendar'></div>
     </div>
 
     <div id="preferencesPage" class="page">
