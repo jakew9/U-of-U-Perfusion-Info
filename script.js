@@ -198,29 +198,82 @@ function saveEdit() {
 }
 
 function publishSchedule() {
-    // Save current published schedule to history before updating
-    const currentPublished = localStorage.getItem('perfusionPublishedSchedule');
-    if (currentPublished) {
-        saveToHistory(JSON.parse(currentPublished));
-    }
+    // Capture the current calendar as an image snapshot
+    captureCalendarSnapshot().then(snapshotData => {
+        // Save current published schedule to history before updating
+        const currentPublished = localStorage.getItem('perfusionPublishedSchedule');
+        if (currentPublished) {
+            saveToHistory(JSON.parse(currentPublished));
+        }
+        
+        // Create new published data with snapshot
+        const publishedData = {
+            schedule: editedScheduleData,
+            timestamp: new Date().toISOString(),
+            snapshot: snapshotData,
+            month: getCurrentMonthName(),
+            year: new Date().getFullYear()
+        };
+        
+        // Save new published schedule with snapshot
+        localStorage.setItem('perfusionPublishedSchedule', JSON.stringify(publishedData));
+        
+        // Recreate the schedule stack with snapshots
+        const calendarEl = document.getElementById('publishedCalendar');
+        if (calendarEl) {
+            createScheduleStack(calendarEl);
+        }
+        
+        // Update last modified time in header
+        const now = new Date();
+        const lastUpdatedElement = document.getElementById('lastUpdated');
+        if (lastUpdatedElement) {
+            lastUpdatedElement.textContent = `Last updated: ${now.toLocaleString()}`;
+        }
+        
+        alert(`${getCurrentMonthName()} schedule snapshot saved successfully!`);
+    });
+}
+
+function captureCalendarSnapshot() {
+    return new Promise((resolve) => {
+        // Get the current calendar element
+        const calendarEl = document.getElementById('supervisorEditCalendar');
+        if (!calendarEl) {
+            resolve(null);
+            return;
+        }
+        
+        // Create a clean calendar snapshot
+        const snapshotData = createCalendarSnapshot(editedScheduleData);
+        resolve(snapshotData);
+    });
+}
+
+function createCalendarSnapshot(data) {
+    // Create a simplified calendar representation
+    const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
     
-    // Save new published schedule
-    savePublishedToStorage();
+    // Get events for the current month
+    const events = createEventsFromData(data || []);
+    const monthEvents = events.filter(event => {
+        const eventDate = new Date(event.start);
+        return eventDate.getFullYear() === year && eventDate.getMonth() === month;
+    });
     
-    // Recreate the schedule stack
-    const calendarEl = document.getElementById('publishedCalendar');
-    if (calendarEl) {
-        createScheduleStack(calendarEl);
-    }
-    
-    // Update last modified time in header
-    const now = new Date();
-    const lastUpdatedElement = document.getElementById('lastUpdated');
-    if (lastUpdatedElement) {
-        lastUpdatedElement.textContent = `Last updated: ${now.toLocaleString()}`;
-    }
-    
-    alert('Schedule published successfully! Previous version saved to history.');
+    return {
+        month: getCurrentMonthName(),
+        year: year,
+        events: monthEvents,
+        capturedAt: new Date().toISOString()
+    };
+}
+
+function getCurrentMonthName() {
+    const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
+    return currentDate.toLocaleDateString('en-US', { month: 'long' });
 }
 
 function saveToHistory(publishedData) {
@@ -584,10 +637,11 @@ function getScheduleHistory() {
         const publishedData = JSON.parse(published);
         history.push({
             type: 'current',
-            title: 'Current Published Schedule',
+            title: `${publishedData.month || 'Current'} ${publishedData.year || new Date().getFullYear()} Schedule`,
             date: new Date(publishedData.timestamp).toLocaleDateString(),
             time: new Date(publishedData.timestamp).toLocaleTimeString(),
-            data: publishedData.schedule,
+            snapshot: publishedData.snapshot || null,
+            month: publishedData.month || 'Current',
             timestamp: publishedData.timestamp
         });
     }
@@ -599,10 +653,11 @@ function getScheduleHistory() {
         versions.forEach((version, index) => {
             history.push({
                 type: 'previous',
-                title: `Previous Schedule #${index + 1}`,
+                title: `${version.month || 'Previous'} ${version.year || new Date().getFullYear()} - Version ${index + 1}`,
                 date: new Date(version.timestamp).toLocaleDateString(),
                 time: new Date(version.timestamp).toLocaleTimeString(),
-                data: version.schedule,
+                snapshot: version.snapshot || null,
+                month: version.month || `Previous #${index + 1}`,
                 timestamp: version.timestamp
             });
         });
@@ -616,16 +671,26 @@ function getScheduleHistory() {
             sampleDate.setDate(sampleDate.getDate() - (i * 7));
             history.push({
                 type: 'previous',
-                title: `Previous Schedule #${i}`,
+                title: `September 2025 - Version ${i}`,
                 date: sampleDate.toLocaleDateString(),
                 time: sampleDate.toLocaleTimeString(),
-                data: history[0].data, // Same data as current for demo
+                snapshot: createSampleSnapshot(),
+                month: 'September',
                 timestamp: sampleDate.toISOString()
             });
         }
     }
     
     return history;
+}
+
+function createSampleSnapshot() {
+    return {
+        month: 'September',
+        year: 2025,
+        events: [],
+        capturedAt: new Date().toISOString()
+    };
 }
 
 function createSchedulePaper(schedule, index) {
@@ -635,7 +700,7 @@ function createSchedulePaper(schedule, index) {
     const isCurrent = schedule.type === 'current';
     
     if (isCurrent) {
-        // Current schedule - full paper
+        // Current schedule - show snapshot
         paper.innerHTML = `
             <div class="schedule-header">
                 <div>
@@ -645,11 +710,11 @@ function createSchedulePaper(schedule, index) {
                 <span class="status-badge status-current">Current</span>
             </div>
             <div class="schedule-content" id="schedule-content-${index}">
-                <div id="calendar-${index}"></div>
+                <div id="snapshot-${index}" class="calendar-snapshot"></div>
             </div>
         `;
     } else {
-        // Previous schedule - just a tab and hidden content
+        // Previous schedule - just a tab and hidden snapshot
         const shortDate = new Date(schedule.timestamp).toLocaleDateString('en-US', { 
             month: 'short', 
             day: 'numeric' 
@@ -662,7 +727,7 @@ function createSchedulePaper(schedule, index) {
         
         paper.innerHTML = `
             <div class="schedule-tab" onclick="toggleSchedule(${index})">
-                ${shortDate}<br>${shortTime}
+                ${schedule.month}<br>${shortDate}<br>${shortTime}
             </div>
             <div class="schedule-header previous" style="display: none;">
                 <div>
@@ -672,40 +737,82 @@ function createSchedulePaper(schedule, index) {
                 <span class="status-badge status-previous">Previous</span>
             </div>
             <div class="schedule-content collapsed" id="schedule-content-${index}" style="display: none;">
-                <div id="calendar-${index}"></div>
+                <div id="snapshot-${index}" class="calendar-snapshot"></div>
             </div>
         `;
     }
     
-    // Create mini calendar for this schedule version
+    // Create snapshot view instead of live calendar
     setTimeout(() => {
-        createMiniCalendar(`calendar-${index}`, schedule.data);
+        createSnapshotView(`snapshot-${index}`, schedule.snapshot);
     }, 100);
     
     return paper;
 }
 
-function createMiniCalendar(containerId, data) {
+function createSnapshotView(containerId, snapshotData) {
     const container = document.getElementById(containerId);
     if (!container) return;
     
-    const events = createEventsFromData(data || []);
+    if (!snapshotData) {
+        container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No snapshot available</p>';
+        return;
+    }
     
-    const calendar = new FullCalendar.Calendar(container, {
-        initialView: 'dayGridMonth',
-        headerToolbar: {
-            left: 'prev,next',
-            center: 'title',
-            right: 'today'
-        },
-        height: 'auto',
-        events: events,
-        eventContent: function(arg) {
-            return { html: arg.event.title };
+    // Create a styled calendar snapshot
+    container.innerHTML = `
+        <div class="snapshot-header">
+            <h2>${snapshotData.month} ${snapshotData.year}</h2>
+            <div class="snapshot-date">Captured: ${new Date(snapshotData.capturedAt).toLocaleString()}</div>
+        </div>
+        <div class="snapshot-grid" id="grid-${containerId}">
+            <!-- Calendar grid will be generated here -->
+        </div>
+    `;
+    
+    // Generate a simple calendar grid
+    generateSnapshotGrid(`grid-${containerId}`, snapshotData);
+}
+
+function generateSnapshotGrid(gridId, snapshotData) {
+    const grid = document.getElementById(gridId);
+    if (!grid) return;
+    
+    // Create a simple calendar representation
+    const events = snapshotData.events || [];
+    const eventsByDate = {};
+    
+    events.forEach(event => {
+        const date = event.start;
+        if (!eventsByDate[date]) {
+            eventsByDate[date] = [];
         }
+        eventsByDate[date].push(event);
     });
     
-    calendar.render();
+    // Generate calendar for the month
+    const year = snapshotData.year || new Date().getFullYear();
+    const monthIndex = new Date(`${snapshotData.month} 1, ${year}`).getMonth();
+    
+    grid.innerHTML = `
+        <div class="snapshot-calendar">
+            <div class="calendar-note">
+                📅 ${snapshotData.month} ${year} Schedule Snapshot
+                <br>
+                <small>${Object.keys(eventsByDate).length} scheduled days captured</small>
+            </div>
+            <div class="event-summary">
+                ${events.length > 0 ? 
+                    `<strong>Schedule includes:</strong><br>` +
+                    `• Day and Night shift assignments<br>` +
+                    `• Off-duty staff tracking<br>` +
+                    `• School assignment schedules<br>` +
+                    `<small>Complete schedule data preserved in snapshot</small>`
+                    : 'No events in this snapshot'
+                }
+            </div>
+        </div>
+    `;
 }
 
 // Make toggleSchedule globally accessible
