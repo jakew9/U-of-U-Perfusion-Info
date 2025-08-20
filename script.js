@@ -650,9 +650,19 @@ function createSchedulePaper(schedule, index) {
         `;
     } else {
         // Previous schedule - just a tab and hidden content
+        const shortDate = new Date(schedule.timestamp).toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric' 
+        });
+        const shortTime = new Date(schedule.timestamp).toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+        });
+        
         paper.innerHTML = `
             <div class="schedule-tab" onclick="toggleSchedule(${index})">
-                ${schedule.date}<br>${schedule.time}
+                ${shortDate}<br>${shortTime}
             </div>
             <div class="schedule-header previous" style="display: none;">
                 <div>
@@ -664,7 +674,6 @@ function createSchedulePaper(schedule, index) {
             <div class="schedule-content collapsed" id="schedule-content-${index}" style="display: none;">
                 <div id="calendar-${index}"></div>
             </div>
-            <button class="expand-button" onclick="toggleSchedule(${index})" style="display: none;">Collapse View</button>
         `;
     }
     
@@ -706,7 +715,6 @@ window.toggleSchedule = function(index) {
     const tab = paper?.querySelector('.schedule-tab');
     const header = paper?.querySelector('.schedule-header');
     const content = paper?.querySelector('.schedule-content');
-    const button = paper?.querySelector('.expand-button');
     
     if (!paper || !content) {
         console.error('Could not find schedule elements for index:', index);
@@ -719,14 +727,20 @@ window.toggleSchedule = function(index) {
         tab.style.display = 'block';
         header.style.display = 'none';
         content.style.display = 'none';
-        button.style.display = 'none';
     } else {
-        // Expand to full view
+        // Collapse any other expanded papers first
+        document.querySelectorAll('.schedule-paper.previous-expanded').forEach(p => {
+            const pIndex = p.className.match(/previous-(\d+)/)?.[1];
+            if (pIndex && pIndex !== index.toString()) {
+                window.toggleSchedule(parseInt(pIndex));
+            }
+        });
+        
+        // Expand this one
         paper.classList.add('previous-expanded');
         tab.style.display = 'none';
         header.style.display = 'flex';
         content.style.display = 'block';
-        button.style.display = 'block';
     }
 };
 
