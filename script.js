@@ -101,7 +101,7 @@ function closePasswordModal() {
 
 function checkPassword() {
     const password = document.getElementById('passwordInput').value;
-    const correctPassword = 'CHRIS';
+    const correctPassword = 'chris';
     
     if (password === correctPassword) {
         closePasswordModal();
