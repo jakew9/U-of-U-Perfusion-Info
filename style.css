@@ -858,6 +858,74 @@ body {
 .schedule-paper.new-schedule {
     animation: newScheduleSlide 0.8s ease-out;
 }
+
+/* Calendar Snapshot Styles */
+.calendar-snapshot {
+    min-height: 300px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    border: 2px dashed #dee2e6;
+}
+
+.snapshot-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.snapshot-header h2 {
+    color: #495057;
+    margin: 0 0 5px 0;
+    font-size: 1.8em;
+    font-weight: 600;
+}
+
+.snapshot-date {
+    color: #6c757d;
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+.snapshot-grid {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #dee2e6;
+}
+
+.snapshot-calendar {
+    text-align: center;
+}
+
+.calendar-note {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.event-summary {
+    background: #e8f5e8;
+    border: 1px solid #d4edda;
+    border-radius: 6px;
+    padding: 15px;
+    color: #155724;
+    line-height: 1.6;
+    text-align: left;
+}
+
+.event-summary strong {
+    color: #0f5132;
+}
+
+.event-summary small {
+    color: #6c757d;
+    font-style: italic;
+}
 .content-card {
     background: white;
     padding: 2rem;
