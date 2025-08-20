@@ -247,6 +247,12 @@ function createEventsFromData(data) {
         const formattedDate = parseDate(date);
         
         // DEBUG: Log the data for troubleshooting
+        if (formattedDate === '2025-09-03') {
+            console.log(`FULL ROW DATA for Sep 3:`, row);
+            console.log(`Row length: ${row.length}`);
+            console.log(`Index 18 (School): "${row[18]}"`);
+            console.log(`Index 19 (Off): "${row[19]}"`);
+        }
         console.log(`Date: ${formattedDate}, Day: ${dayShiftData}, Night: ${nightShiftData}, School: ${schoolData}, Off: ${offData}`);
         
         if (formattedDate) {
