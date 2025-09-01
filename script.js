@@ -70,17 +70,12 @@ function savePublishedToStorage() {
 
 // --- Page and Modal Management ---
 
-// Page Navigation
+// Modified showPage function to refresh tabs when showing published schedule
 function showPage(pageId) {
     const pages = document.querySelectorAll('.page');
     pages.forEach(page => page.classList.remove('active'));
     
     document.getElementById(pageId).classList.add('active');
-    
-    // Reset supervisor access when leaving supervisor pages
-    if (pageId !== 'supervisorEditPage' && pageId !== 'supervisorViewPage' && pageId !== 'supervisorPage' && pageId !== 'supervisorPublishedPage') {
-        hasSupervisorAccess = false;
-    }
     
     if (pageId === 'schedulePage' && !calendar) {
         initializeCalendar();
@@ -88,13 +83,11 @@ function showPage(pageId) {
         initializeSupervisorViewCalendar();
     } else if (pageId === 'supervisorEditPage' && !supervisorEditCalendar) {
         initializeSupervisorEditCalendar();
-    } else if (pageId === 'publishedSchedulePage' && !publishedCalendar) {
+    } else if (pageId === 'publishedSchedulePage') {
+        // Always reinitialize the published calendar to refresh tabs
         initializePublishedCalendar();
-    } else if (pageId === 'supervisorPublishedPage' && !supervisorPublishedCalendar) {
-        initializeSupervisorPublishedCalendar();
     }
 }
-
 // Password protection for edit access
 function requestEditAccess() {
     document.getElementById('passwordModal').style.display = 'block';
@@ -258,63 +251,32 @@ function clearEdits() {
     alert('All edits have been cleared. Calendar reverted to original Google Sheets data.');
 }
 
+// Modified publishSchedule function to refresh tabs
 function publishSchedule() {
-    // Get the current month being viewed in the edit calendar
-    const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
-    const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'long' });
-    const currentYear = currentDate.getFullYear();
+    // Save current published schedule to history before updating
+    const currentPublished = localStorage.getItem('perfusionPublishedSchedule');
+    if (currentPublished) {
+        saveToHistory(JSON.parse(currentPublished));
+    }
     
-    // Capture snapshot of the current month being edited
-    const snapshotData = captureCurrentMonthSnapshot();
-    
-    // Create new published version
-    const newVersion = {
-        id: Date.now(), // Unique ID for this version
-        month: currentMonth,
-        year: currentYear,
+    // Create new published data
+    const publishedData = {
+        schedule: editedScheduleData,
         timestamp: new Date().toISOString(),
-        snapshot: snapshotData,
-        schedule: JSON.parse(JSON.stringify(editedScheduleData)) // Deep copy
+        version: getVersionNumber()
     };
     
-    // Get existing published versions
-    let publishedVersions = [];
-    const existingVersions = localStorage.getItem('perfusionPublishedVersions');
-    if (existingVersions) {
-        publishedVersions = JSON.parse(existingVersions);
+    // Save new published schedule
+    localStorage.setItem('perfusionPublishedSchedule', JSON.stringify(publishedData));
+    
+    alert(`Schedule published successfully as Version ${publishedData.version}!`);
+    
+    // If we're currently on the published schedule page, refresh the tabs and display
+    const publishedPage = document.getElementById('publishedSchedulePage');
+    if (publishedPage.classList.contains('active')) {
+        createVersionTabs();
+        displayVersion('current', publishedData);
     }
-    
-    // Sort versions by year and month (most recent first)
-    publishedVersions.push(newVersion);
-    publishedVersions.sort((a, b) => {
-        if (a.year !== b.year) {
-            return b.year - a.year; // Most recent year first
-        }
-        // Convert month names to numbers for comparison
-        const monthA = new Date(`${a.month} 1, ${a.year}`).getMonth();
-        const monthB = new Date(`${b.month} 1, ${b.year}`).getMonth();
-        return monthB - monthA; // Most recent month first
-    });
-    
-    // Keep only last 10 versions to prevent storage bloat
-    if (publishedVersions.length > 10) {
-        publishedVersions = publishedVersions.slice(0, 10);
-    }
-    
-    // Save updated versions
-    localStorage.setItem('perfusionPublishedVersions', JSON.stringify(publishedVersions));
-    
-    // Refresh the published schedule display
-    refreshPublishedScheduleDisplay();
-    
-    // Update last modified time in header
-    const now = new Date();
-    const lastUpdatedElement = document.getElementById('lastUpdated');
-    if (lastUpdatedElement) {
-        lastUpdatedElement.textContent = `Last updated: ${now.toLocaleString()}`;
-    }
-    
-    alert(`${currentMonth} ${currentYear} schedule published successfully!`);
 }
 
 function captureCurrentMonthSnapshot() {
@@ -743,6 +705,131 @@ function displaySupervisorPublishedVersion(versionIndex, versions) {
         renderSupervisorVersionCalendar(version.snapshot);
     }, 100);
 }
+function createVersionTabs() {
+    const tabsContainer = document.getElementById('versionTabs');
+    tabsContainer.innerHTML = '';
+    
+    // Get current published version
+    const currentPublished = localStorage.getItem('perfusionPublishedSchedule');
+    
+    // Get version history
+    const historyData = localStorage.getItem('perfusionScheduleHistory');
+    const history = historyData ? JSON.parse(historyData) : [];
+    
+    // Create tabs for previous versions (in reverse order - oldest to newest)
+    const reversedHistory = [...history].reverse();
+    reversedHistory.forEach((version, index) => {
+        const versionNum = index + 1;
+        const tab = createVersionTab(versionNum, version, false);
+        tabsContainer.appendChild(tab);
+    });
+
+     if (currentPublished) {
+        const currentData = JSON.parse(currentPublished);
+        const currentVersionNum = history.length + 1;
+        const tab = createVersionTab(currentVersionNum, currentData, true);
+        tabsContainer.appendChild(tab);
+        
+        // Set current version as active by default
+        tab.classList.add('active');
+        currentDisplayedVersion = 'current';
+    }
+        // Show/hide tabs container based on whether we have multiple versions
+    const tabsContainerDiv = document.getElementById('versionTabsContainer');
+    if (history.length === 0 && !currentPublished) {
+        tabsContainerDiv.style.display = 'none';
+    } else {
+        tabsContainerDiv.style.display = 'block';
+    }
+}
+// Create individual version tab
+function createVersionTab(versionNum, versionData, isCurrent) {
+    const tab = document.createElement('div');
+    tab.className = `version-tab ${isCurrent ? 'current' : ''}`;
+    tab.setAttribute('data-version', isCurrent ? 'current' : versionNum);
+    
+    const date = new Date(versionData.timestamp);
+    const shortDate = date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric'
+    });
+    const shortTime = date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+    });
+    
+    tab.innerHTML = `
+        <div>Vers. ${versionNum}</div>
+        <div class="version-info">${shortDate}</div>
+        <div class="version-info">${shortTime}</div>
+    `;
+    
+    // Add click handler
+    tab.addEventListener('click', () => {
+        selectVersionTab(isCurrent ? 'current' : versionNum, versionData);
+    });
+    
+    return tab;
+}
+// Handle version tab selection
+function selectVersionTab(version, versionData) {
+    // Update active tab styling
+    document.querySelectorAll('.version-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    const selectedTab = document.querySelector(`[data-version="${version}"]`);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    // Display the selected version
+    displayVersion(version, versionData);
+    currentDisplayedVersion = version;
+}
+
+// Display a specific version in the calendar
+function displayVersion(version, versionData) {
+    const calendarEl = document.getElementById('publishedCalendar');
+    
+    // Destroy existing calendar
+    if (publishedCalendar) {
+        publishedCalendar.destroy();
+    }
+    
+    // Create events from the version data
+    const events = createEventsFromData(versionData.schedule || []);
+    
+    // Create new calendar
+    publishedCalendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,dayGridWeek,dayGridDay'
+        },
+        showNonCurrentDates: false,
+        fixedWeekCount: false,
+        events: events,
+        eventContent: function(arg) {
+            return { html: arg.event.title };
+        }
+    });
+    
+    publishedCalendar.render();
+    
+    // Update last updated info
+    updateLastUpdatedForVersion(versionData, version);
+}
+
+// Update the last updated timestamp for the displayed version
+function updateLastUpdatedForVersion(versionData, version) {
+    const lastUpdatedEl = document.getElementById('lastUpdated');
+    const timestamp = new Date(versionData.timestamp);
+    const versionText = version === 'current' ? 'Current Version' : `Version ${version}`;
+    lastUpdatedEl.textContent = `${versionText} - Published: ${timestamp.toLocaleString()}`;
+}
 
 function renderSupervisorVersionCalendar(snapshotData) {
     const container = document.getElementById('supervisorVersionCalendar');
@@ -761,29 +848,31 @@ function renderSupervisorVersionCalendar(snapshotData) {
 // Replace the initializePublishedCalendar function with this simpler version:
 
 function initializePublishedCalendar() {
-    const calendarEl = document.getElementById('publishedCalendar');
+    createVersionTabs();
     
-    // Load the published schedule data
+    // Load and display the current (latest) version by default
     const savedData = loadSavedData();
-    let scheduleData = [];
-    
     if (savedData && savedData.schedule) {
-        scheduleData = savedData.schedule;
-        console.log('Loaded published schedule data:', scheduleData.length, 'rows');
+        displayVersion('current', savedData);
     } else {
-        // Fallback: try to load original data from Google Sheets
+        // Fallback: load original data from Google Sheets
         fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
             .then(response => response.json())
             .then(data => {
-                scheduleData = data.values || [];
-                initializePublishedCalendarWithData(scheduleData);
+                const fallbackData = {
+                    schedule: data.values || [],
+                    timestamp: new Date().toISOString(),
+                    version: 1
+                };
+                displayVersion('current', fallbackData);
             })
             .catch(error => {
                 console.error('Error fetching data: ', error);
-                calendarEl.innerHTML = '<p style="text-align: center;">Error loading schedule data.</p>';
+                document.getElementById('publishedCalendar').innerHTML = 
+                    '<p style="text-align: center;">Error loading schedule data.</p>';
             });
-        return;
     }
+}
     
     initializePublishedCalendarWithData(scheduleData);
 }
