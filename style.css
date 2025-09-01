@@ -786,3 +786,86 @@ body {
     color: #666;
     margin-top: 0.5rem;
 }
+/* Version Tabs Styles */
+.version-tabs-container {
+    background: white;
+    margin-bottom: 10px;
+    padding: 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+
+.version-tabs {
+    display: flex;
+    gap: 0;
+    padding: 10px;
+    overflow-x: auto;
+    align-items: center;
+}
+
+.version-tab {
+    padding: 10px 20px;
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #495057;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    margin-right: 8px;
+    min-width: 80px;
+    text-align: center;
+}
+
+.version-tab:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-2px);
+}
+
+.version-tab.active {
+    background-color: #667eea;
+    border-color: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.version-tab.current {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+.version-tab.current.active {
+    background-color: #218838;
+    border-color: #218838;
+}
+
+.version-info {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    margin-top: 2px;
+}
+
+/* Add scroll indicators for mobile */
+.version-tabs::-webkit-scrollbar {
+    height: 4px;
+}
+
+.version-tabs::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.version-tabs::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+.version-tabs::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
