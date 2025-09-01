@@ -120,7 +120,16 @@ function checkPassword() {
     
     if (password === correctPassword) {
         closePasswordModal();
-        showPage('supervisorEditPage');
+        
+        // Check if there's a pending page to navigate to
+        const pendingPage = sessionStorage.getItem('pendingPage');
+        if (pendingPage) {
+            sessionStorage.removeItem('pendingPage');
+            showPage(pendingPage);
+        } else {
+            // Default to supervisor edit page
+            showPage('supervisorEditPage');
+        }
     } else {
         document.getElementById('passwordError').textContent = 'Incorrect password. Please try again.';
         document.getElementById('passwordError').style.display = 'block';
@@ -128,7 +137,6 @@ function checkPassword() {
         document.getElementById('passwordInput').focus();
     }
 }
-
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('passwordInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -819,7 +827,12 @@ function deleteVersion(versionNum) {
         alert('Error deleting version. Please try again.');
     }
 }
-
+function requestManageAccess() {
+    // Store that we want to go to manage page after password check
+    sessionStorage.setItem('pendingPage', 'managePublishedPage');
+    document.getElementById('passwordModal').style.display = 'block';
+    document.getElementById('passwordInput').focus();
+}
 function clearAllVersions() {
     const historyData = localStorage.getItem('perfusionScheduleHistory');
     const history = historyData ? JSON.parse(historyData) : [];
