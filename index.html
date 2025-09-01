@@ -45,7 +45,7 @@
             <div class="menu-card">
                 <h3>Manage Published</h3>
                 <p>View and delete published schedule versions</p>
-                <button class="menu-button manage-button" onclick="requestManagePublishedAccess()">Manage Published</button>
+                <button class="menu-button edit-button" onclick="showManagePublished()">Manage Published</button>
             </div>
         </div>
     </div>
@@ -62,10 +62,7 @@
         <div class="page-header">
             <button class="back-button" onclick="showPage('supervisorPage')">← Back</button>
             <h1 class="page-title">Supervisor - Edit Schedule</h1>
-            <div class="header-buttons">
-                <button class="clear-button" onclick="clearEdits()">Clear Edits</button>
-                <button class="publish-button" onclick="publishSchedule()">Publish Schedule</button>
-            </div>
+            <button class="publish-button" onclick="publishSchedule()">Publish Schedule</button>
         </div>
         <div class="supervisor-controls">
             <div class="edit-instructions">
@@ -76,28 +73,43 @@
         <div id='supervisorEditCalendar'></div>
     </div>
 
-    <div id="supervisorPublishedPage" class="page">
-        <div class="page-header">
-            <button class="back-button" onclick="showPage('supervisorPage')">← Back</button>
-            <h1 class="page-title">Supervisor - Manage Published Schedules</h1>
-            <div class="last-updated" id="supervisorLastUpdated"></div>
-        </div>
-        <div id='supervisorPublishedCalendar'></div>
-    </div>
-
     <div id="publishedSchedulePage" class="page">
         <div class="page-header">
             <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
             <h1 class="page-title">Published Schedule</h1>
             <div class="last-updated" id="lastUpdated"></div>
         </div>
-        <!-- ADDED: Version Tabs Container -->
+        <!-- Version Tabs Container -->
         <div class="version-tabs-container" id="versionTabsContainer">
             <div class="version-tabs" id="versionTabs">
                 <!-- Version buttons will be dynamically added here -->
             </div>
         </div>
         <div id='publishedCalendar'></div>
+    </div>
+
+    <div id="managePublishedPage" class="page">
+        <div class="page-header">
+            <button class="back-button" onclick="showPage('supervisorPage')">← Back</button>
+            <h1 class="page-title">Manage Published Versions</h1>
+        </div>
+        
+        <div class="content-card">
+            <div class="manage-published-section">
+                <h3>Published Schedule Versions</h3>
+                <p>View and manage all published schedule versions. You can delete old versions to free up storage space.</p>
+                
+                <div id="publishedVersionsList" class="versions-list">
+                    <!-- Version items will be dynamically added here -->
+                </div>
+                
+                <div class="manage-actions">
+                    <button class="danger-button" onclick="clearAllVersions()" id="clearAllBtn" style="display: none;">
+                        Clear All Old Versions
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="preferencesPage" class="page">
@@ -214,7 +226,6 @@
     </div>
 
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js'></script>
-   
     <script src="script.js"></script>
     
 </body>
