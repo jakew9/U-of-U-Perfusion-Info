@@ -244,6 +244,12 @@ body {
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     flex-shrink: 0;
+    justify-content: space-between;
+}
+
+.page-header-left {
+    display: flex;
+    align-items: center;
 }
  
 .back-button {
@@ -252,3 +258,531 @@ body {
     background-color: #667eea;
     color: white;
     border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+ 
+.back-button:hover {
+    background-color: #5a6fd8;
+}
+ 
+.page-title {
+    font-size: 2rem;
+    color: #333;
+    margin: 0;
+}
+
+.page-header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Previous Version Button */
+.previous-version-button {
+    padding: 0.5rem 1rem;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.previous-version-button:hover {
+    background-color: #5a6268;
+    transform: translateY(-2px);
+}
+
+.previous-version-button:disabled {
+    background-color: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.version-indicator {
+    background-color: #495057;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+ 
+/* Calendar Styles - Ultra Compact */
+#calendar, #supervisorCalendar, #publishedCalendar, #supervisorViewCalendar, #supervisorEditCalendar {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 5px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    backdrop-filter: blur(10px);
+    height: calc(100vh - 350px); /* Much more space reserved for header */
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+}
+ 
+.fc-event, .fc-event-main {
+    white-space: normal !important;
+    height: auto !important;
+    line-height: 1 !important;
+    font-size: 10px !important;
+}
+ 
+.fc-event-title-container p {
+    margin: 0;
+    line-height: 1;
+    padding-top: 1px;
+    overflow: visible;
+    white-space: normal;
+    font-size: 10px !important;
+}
+ 
+.fc-daygrid-day-frame {
+    min-height: 40px !important; /* Much smaller cells */
+}
+ 
+.fc-daygrid-day {
+    min-height: 40px !important; /* Much smaller cells */
+    padding: 1px !important;
+}
+
+.fc {
+    height: 100% !important;
+}
+
+.fc-header-toolbar {
+    margin-bottom: 3px !important;
+    font-size: 12px !important;
+}
+
+.fc-daygrid-day-number {
+    font-size: 10px !important;
+}
+
+.fc-col-header-cell {
+    font-size: 10px !important;
+    padding: 3px !important;
+}
+
+/* Make calendar title smaller */
+.fc-toolbar-title {
+    font-size: 16px !important;
+}
+
+/* Make navigation buttons smaller */
+.fc-button {
+    padding: 2px 6px !important;
+    font-size: 10px !important;
+}
+ 
+/* Weekend events should have no background */
+.weekend-event {
+    background: transparent !important;
+    border: none !important;
+}
+ 
+/* Supervisor Page Styles */
+.supervisor-controls {
+    background: white;
+    padding: 8px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    font-size: 14px;
+}
+ 
+.edit-instructions {
+    margin: 0;
+}
+ 
+.edit-instructions p {
+    margin: 0.5rem 0;
+    color: #666;
+}
+ 
+.publish-button {
+    padding: 0.5rem 1rem;
+    margin-left: auto;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+}
+ 
+.publish-button:hover {
+    background-color: #218838;
+}
+ 
+.last-updated {
+    color: #666;
+    font-style: italic;
+    margin-left: auto;
+}
+ 
+/* Editable calendar events */
+.fc-event.editable {
+    cursor: pointer;
+    border: 2px dashed transparent;
+}
+ 
+.fc-event.editable:hover {
+    border: 2px dashed #333;
+    opacity: 0.8;
+}
+ 
+/* Modal styles for editing */
+.edit-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+ 
+.edit-modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+ 
+.edit-modal h3 {
+    margin-top: 0;
+    color: #333;
+}
+ 
+.edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+ 
+.edit-form label {
+    font-weight: bold;
+    color: #555;
+}
+ 
+.edit-form input {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+ 
+.edit-form-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+ 
+.edit-form-buttons button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+ 
+.save-btn {
+    background-color: #28a745;
+    color: white;
+}
+ 
+.save-btn:hover {
+    background-color: #218838;
+}
+ 
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+}
+ 
+.cancel-btn:hover {
+    background-color: #545b62;
+}
+ 
+/* Supervisor Menu Styles */
+.supervisor-menu {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+ 
+.menu-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    text-align: center;
+    min-width: 250px;
+}
+ 
+.menu-card h3 {
+    color: #667eea;
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+ 
+.menu-card p {
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+ 
+.menu-button {
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+ 
+.view-button {
+    background-color: #17a2b8;
+    color: white;
+}
+ 
+.view-button:hover {
+    background-color: #138496;
+}
+ 
+.edit-button {
+    background-color: #ffc107;
+    color: #333;
+}
+ 
+.edit-button:hover {
+    background-color: #e0a800;
+}
+ 
+/* Password Modal Styles */
+.password-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+ 
+.password-modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 400px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    text-align: center;
+}
+ 
+.password-input {
+    width: 100%;
+    padding: 1rem;
+    margin: 1rem 0;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    text-align: center;
+}
+ 
+.password-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+ 
+.password-submit {
+    background-color: #28a745;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+ 
+.password-submit:hover {
+    background-color: #218838;
+}
+ 
+.password-cancel {
+    background-color: #6c757d;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+ 
+.password-cancel:hover {
+    background-color: #545b62;
+}
+ 
+.error-message {
+    color: #dc3545;
+    margin-top: 0.5rem;
+    font-weight: bold;
+}
+ 
+/* Color picker styles */
+.color-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+ 
+.color-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
+ 
+.color-option:hover {
+    background-color: #f0f0f0;
+}
+ 
+.color-option input[type="radio"] {
+    margin-right: 0.5rem;
+}
+ 
+.color-preview {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    color: white;
+    font-size: 0.85rem;
+    min-width: 60px;
+    text-align: center;
+}
+ 
+.auto-color {
+    background: linear-gradient(45deg, #B22222, #228B22, #FFFFFF);
+    color: #333;
+    font-weight: bold;
+}
+
+/* Schedule Version Styles - Simplified */
+.schedule-container {
+    position: relative;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+}
+
+.schedule-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 20px;
+    text-align: center;
+    border-bottom: 2px solid rgba(255,255,255,0.2);
+}
+
+.schedule-header.previous {
+    background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+}
+
+.schedule-title {
+    font-size: 1.3em;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+}
+
+.schedule-date {
+    font-size: 0.85em;
+    opacity: 0.9;
+}
+
+.schedule-content {
+    height: calc(100% - 80px);
+    overflow: hidden;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.7em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 10px;
+}
+
+.status-current {
+    background: #27ae60;
+    color: white;
+}
+
+.status-previous {
+    background: #95a5a6;
+    color: white;
+}
+
+.content-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    max-width: 800px;
+    margin: 0 auto;
+}
+ 
+.preferences-section {
+    margin-bottom: 2rem;
+}
+ 
+.preferences-section h3 {
+    color: #667eea;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 0.5rem;
+}
+ 
+.important-date-item {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background-color: #f8f9fa;
+    border-left: 4px solid #667eea;
+    border-radius: 5px;
+}
+ 
+.date-title {
+    font-weight: bold;
+    color: #333;
+}
+ 
+.date-info {
+    color: #666;
+    margin-top: 0.5rem;
+}
