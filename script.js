@@ -758,50 +758,56 @@ function renderSupervisorVersionCalendar(snapshotData) {
     generateFullCalendarGrid('supervisorCalendarGrid', snapshotData);
 }
 
+// Replace the initializePublishedCalendar function with this simpler version:
+
 function initializePublishedCalendar() {
     const calendarEl = document.getElementById('publishedCalendar');
-    refreshPublishedScheduleDisplay();
+    
+    // Load the published schedule data
+    const savedData = loadSavedData();
+    let scheduleData = [];
+    
+    if (savedData && savedData.schedule) {
+        scheduleData = savedData.schedule;
+        console.log('Loaded published schedule data:', scheduleData.length, 'rows');
+    } else {
+        // Fallback: try to load original data from Google Sheets
+        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
+            .then(response => response.json())
+            .then(data => {
+                scheduleData = data.values || [];
+                initializePublishedCalendarWithData(scheduleData);
+            })
+            .catch(error => {
+                console.error('Error fetching data: ', error);
+                calendarEl.innerHTML = '<p style="text-align: center;">Error loading schedule data.</p>';
+            });
+        return;
+    }
+    
+    initializePublishedCalendarWithData(scheduleData);
 }
 
-function displayPublishedVersion(versionIndex, versions) {
+function initializePublishedCalendarWithData(scheduleData) {
     const calendarEl = document.getElementById('publishedCalendar');
-    if (!calendarEl || !versions || versions.length === 0) return;
-    
-    currentVersionIndex = versionIndex;
-    const version = versions[versionIndex];
-    
-    if (!version) return;
-    
-    // Regular published schedule - no delete functionality
-    calendarEl.innerHTML = `
-        <div class="published-version-container">
-            <div class="version-header">
-                <div class="version-info">
-                    <h2>${version.month} ${version.year} Schedule</h2>
-                    <p class="version-meta">Published: ${new Date(version.timestamp).toLocaleString()}</p>
-                    <p class="version-number">Version ${versionIndex + 1} of ${versions.length}</p>
-                </div>
-                <div class="version-controls">
-                    <div class="version-navigation">
-                        <button class="nav-btn prev-btn" onclick="showPreviousVersion()" ${versionIndex >= versions.length - 1 ? 'disabled' : ''}>
-                            ← Previous
-                        </button>
-                        <button class="nav-btn next-btn" onclick="showNextVersion()" ${versionIndex <= 0 ? 'disabled' : ''}>
-                            Next →
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="version-calendar" id="versionCalendar">
-                <!-- Calendar will be rendered here -->
-            </div>
-        </div>
-    `;
-    
-    // Render the calendar snapshot
-    setTimeout(() => {
-        renderVersionCalendar(version.snapshot);
-    }, 100);
+    const events = createEventsFromData(scheduleData);
+
+    publishedCalendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,dayGridWeek,dayGridDay'
+        },
+        showNonCurrentDates: false,
+        fixedWeekCount: false,
+        events: events,
+        eventContent: function(arg) {
+            return { html: arg.event.title };
+        }
+    });
+
+    publishedCalendar.render();
 }
 
 function getPublishedVersions() {
