@@ -7,10 +7,11 @@ let calendar;
 let supervisorViewCalendar;
 let supervisorEditCalendar;
 let publishedCalendar;
-let supervisorPublishedCalendar;
+let previousCalendar;
 let originalScheduleData = [];
 let editedScheduleData = [];
 let currentEditDate = null;
+let currentDisplayedVersion = null;
 
 // --- Data Management Functions ---
 
@@ -68,9 +69,23 @@ function savePublishedToStorage() {
     }
 }
 
+// Version Management Functions
+function getVersionNumber() {
+    try {
+        const history = localStorage.getItem('perfusionScheduleHistory');
+        if (history) {
+            const versions = JSON.parse(history);
+            return versions.length + 1;
+        }
+    } catch (error) {
+        console.error('Error getting version number:', error);
+    }
+    return 1;
+}
+
 // --- Page and Modal Management ---
 
-// Modified showPage function to refresh tabs when showing published schedule
+// Page Navigation
 function showPage(pageId) {
     const pages = document.querySelectorAll('.page');
     pages.forEach(page => page.classList.remove('active'));
@@ -86,51 +101,30 @@ function showPage(pageId) {
     } else if (pageId === 'publishedSchedulePage') {
         // Always reinitialize the published calendar to refresh tabs
         initializePublishedCalendar();
+    } else if (pageId === 'previousSchedulePage' && !previousCalendar) {
+        initializePreviousCalendar();
     }
 }
+
 // Password protection for edit access
 function requestEditAccess() {
     document.getElementById('passwordModal').style.display = 'block';
     document.getElementById('passwordInput').focus();
 }
 
-// New function for manage published access
-function requestManagePublishedAccess() {
-    if (hasSupervisorAccess) {
-        showPage('supervisorPublishedPage');
-    } else {
-        document.getElementById('passwordModal').style.display = 'block';
-        document.getElementById('passwordInput').focus();
-        // Set a flag to know we're accessing manage published after password
-        sessionStorage.setItem('pendingPageAfterPassword', 'supervisorPublishedPage');
-    }
-}
-
 function closePasswordModal() {
     document.getElementById('passwordModal').style.display = 'none';
     document.getElementById('passwordInput').value = '';
     document.getElementById('passwordError').style.display = 'none';
-    sessionStorage.removeItem('pendingPageAfterPassword');
 }
-
-// Track if user has supervisor access
-let hasSupervisorAccess = false;
 
 function checkPassword() {
     const password = document.getElementById('passwordInput').value;
-    const correctPassword = 'chris';
+    const correctPassword = 'CHRIS';
     
     if (password === correctPassword) {
-        hasSupervisorAccess = true; // Grant supervisor access
         closePasswordModal();
-        
-        // Check if we have a pending page to navigate to
-        const pendingPage = sessionStorage.getItem('pendingPageAfterPassword');
-        if (pendingPage) {
-            showPage(pendingPage);
-        } else {
-            showPage('supervisorEditPage');
-        }
+        showPage('supervisorEditPage');
     } else {
         document.getElementById('passwordError').textContent = 'Incorrect password. Please try again.';
         document.getElementById('passwordError').style.display = 'block';
@@ -138,6 +132,15 @@ function checkPassword() {
         document.getElementById('passwordInput').focus();
     }
 }
+
+// Allow Enter key to submit password
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            checkPassword();
+        }
+    });
+});
 
 // Edit modal functions
 function openEditModal(dateStr, dayShift, nightShift) {
@@ -173,9 +176,6 @@ function saveEdit() {
     const nightShift = document.getElementById('nightShiftInput').value.trim();
     const selectedColor = document.querySelector('input[name="backgroundColor"]:checked').value;
     
-    // Store the current date being viewed before destroying calendar
-    const currentViewDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
-    
     // Parse the date correctly
     const [year, month, day] = currentEditDate.split('-').map(Number);
     const targetDate = new Date(year, month - 1, day); // month is 0-indexed
@@ -208,7 +208,7 @@ function saveEdit() {
     
     // Completely refresh the supervisor calendar to avoid stacking
     supervisorEditCalendar.destroy();
-    initializeSupervisorEditCalendarFromData(currentViewDate); // Pass the current view date
+    initializeSupervisorEditCalendarFromData();
     
     // Save edits automatically
     saveEditsToStorage();
@@ -216,42 +216,7 @@ function saveEdit() {
     closeEditModal();
 }
 
-function clearEdits() {
-    // Show confirmation dialog
-    const confirmClear = confirm('Are you sure you want to clear all edits and revert to the original Google Sheets data? This action cannot be undone.');
-    
-    if (!confirmClear) {
-        return; // User cancelled
-    }
-    
-    // Store the current date being viewed before clearing
-    const currentViewDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
-    
-    // Revert editedScheduleData back to the original Google Sheets data
-    editedScheduleData = JSON.parse(JSON.stringify(originalScheduleData));
-    
-    // Clear ALL saved data from localStorage - this is the key fix
-    localStorage.removeItem('perfusionScheduleEdits');
-    localStorage.removeItem('perfusionPublishedSchedule');
-    localStorage.removeItem('perfusionPublishedVersions');
-    localStorage.removeItem('perfusionScheduleHistory');
-    
-    console.log('All localStorage data cleared:', {
-        edits: localStorage.getItem('perfusionScheduleEdits'),
-        published: localStorage.getItem('perfusionPublishedSchedule'),
-        versions: localStorage.getItem('perfusionPublishedVersions'),
-        history: localStorage.getItem('perfusionScheduleHistory')
-    });
-    
-    // Refresh the calendar with original data
-    supervisorEditCalendar.destroy();
-    initializeSupervisorEditCalendarFromData(currentViewDate);
-    
-    console.log('Edits cleared - reverted to original Google Sheets data');
-    alert('All edits have been cleared. Calendar reverted to original Google Sheets data.');
-}
-
-// Modified publishSchedule function to refresh tabs
+// MODIFIED: publishSchedule function to refresh tabs
 function publishSchedule() {
     // Save current published schedule to history before updating
     const currentPublished = localStorage.getItem('perfusionPublishedSchedule');
@@ -273,47 +238,33 @@ function publishSchedule() {
     
     // If we're currently on the published schedule page, refresh the tabs and display
     const publishedPage = document.getElementById('publishedSchedulePage');
-    if (publishedPage.classList.contains('active')) {
+    if (publishedPage && publishedPage.classList.contains('active')) {
         createVersionTabs();
         displayVersion('current', publishedData);
     }
 }
 
-function captureCurrentMonthSnapshot() {
-    const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    
-    // Get events for the current month being edited
-    const events = createEventsFromData(editedScheduleData || []);
-    
-    // More robust month filtering - check both the calendar month and the actual event dates
-    const monthEvents = events.filter(event => {
-        const eventDate = new Date(event.start + 'T00:00:00');
-        const eventYear = eventDate.getFullYear();
-        const eventMonth = eventDate.getMonth();
-        
-        // Debug logging for the 1st of each month
-        if (eventDate.getDate() === 1) {
-            console.log(`Checking 1st: Event date: ${event.start}, Event year: ${eventYear}, Event month: ${eventMonth}, Target year: ${year}, Target month: ${month}`);
+function saveToHistory(publishedData) {
+    try {
+        let history = [];
+        const existingHistory = localStorage.getItem('perfusionScheduleHistory');
+        if (existingHistory) {
+            history = JSON.parse(existingHistory);
         }
         
-        return eventYear === year && eventMonth === month;
-    });
-    
-    console.log(`Captured ${monthEvents.length} events for ${currentDate.toLocaleDateString('en-US', { month: 'long' })} ${year}`);
-    
-    return {
-        month: currentDate.toLocaleDateString('en-US', { month: 'long' }),
-        year: year,
-        events: monthEvents,
-        capturedAt: new Date().toISOString()
-    };
-}
-
-function getCurrentMonthName() {
-    const currentDate = supervisorEditCalendar ? supervisorEditCalendar.getDate() : new Date();
-    return currentDate.toLocaleDateString('en-US', { month: 'long' });
+        // Add current published schedule to history
+        history.unshift(publishedData); // Add to beginning
+        
+        // Keep only last 5 versions
+        if (history.length > 5) {
+            history = history.slice(0, 5);
+        }
+        
+        localStorage.setItem('perfusionScheduleHistory', JSON.stringify(history));
+        console.log('Saved to schedule history');
+    } catch (error) {
+        console.error('Error saving to history:', error);
+    }
 }
 
 // --- Helper Functions ---
@@ -321,32 +272,11 @@ function getCurrentMonthName() {
 // Date functions
 function parseDate(dateString) {
     if (!dateString) return null;
-    
-    // Handle different date formats and ensure consistency
-    let date;
-    if (typeof dateString === 'string') {
-        // If it's already in YYYY-MM-DD format, use it directly
-        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            date = new Date(dateString + 'T00:00:00'); // Add time to avoid timezone issues
-        } else {
-            date = new Date(dateString);
-        }
-    } else {
-        date = new Date(dateString);
-    }
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-        console.warn('Invalid date:', dateString);
-        return null;
-    }
-    
+    const date = new Date(dateString);
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
-    
-    const result = `${year}-${month}-${day}`;
-    return result;
+    return `${year}-${month}-${day}`;
 }
 
 function getCorrectDayOfWeek(dateString) {
@@ -359,7 +289,7 @@ function getCorrectDayOfWeek(dateString) {
 function createEventsFromData(data) {
     const events = [];
     
-    data.forEach((row, rowIndex) => {
+    data.forEach(row => {
         const date = row[0];        
         const dayShiftData = row[16];   
         const nightShiftData = row[17];
@@ -399,7 +329,6 @@ function createEventsFromData(data) {
                 titleHTML += `<div style="color:#FFFFFF; background-color:#0066CC; padding:1px 2px; border-radius:2px; font-weight:bold;">School: ${schoolData.trim()}</div>`;
             }
 
-            // Create event if there's any content
             if (titleHTML) {
                 const eventData = {
                     title: titleHTML,
@@ -604,13 +533,12 @@ function initializeSupervisorEditCalendar() {
         });
 }
 
-function initializeSupervisorEditCalendarFromData(preserveDate = null) {
+function initializeSupervisorEditCalendarFromData() {
     const calendarEl = document.getElementById('supervisorEditCalendar');
     const events = createEditableEvents(editedScheduleData);
 
     supervisorEditCalendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
-        initialDate: preserveDate || new Date(), // Use preserved date or default to current
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
@@ -633,80 +561,82 @@ function initializeSupervisorEditCalendarFromData(preserveDate = null) {
     supervisorEditCalendar.render();
 }
 
-function initializeSupervisorPublishedCalendar() {
-    const calendarEl = document.getElementById('supervisorPublishedCalendar');
-    hasSupervisorAccess = true; // Ensure supervisor access for this page
-    refreshSupervisorPublishedScheduleDisplay();
-}
-
-function refreshSupervisorPublishedScheduleDisplay() {
-    const calendarEl = document.getElementById('supervisorPublishedCalendar');
-    if (!calendarEl) return;
+// MODIFIED: initializePublishedCalendar function with version tabs
+function initializePublishedCalendar() {
+    createVersionTabs();
     
-    // Get published versions
-    const publishedVersions = getPublishedVersions();
-    
-    if (publishedVersions.length === 0) {
-        calendarEl.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">No published schedules yet. Go to Supervisor Edit to publish a schedule.</p>';
-        return;
+    // Load and display the current (latest) version by default
+    const savedData = loadSavedData();
+    if (savedData && savedData.schedule) {
+        displayVersion('current', savedData);
+    } else {
+        // Fallback: load original data from Google Sheets
+        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
+            .then(response => response.json())
+            .then(data => {
+                const fallbackData = {
+                    schedule: data.values || [],
+                    timestamp: new Date().toISOString(),
+                    version: 1
+                };
+                displayVersion('current', fallbackData);
+            })
+            .catch(error => {
+                console.error('Error fetching data: ', error);
+                document.getElementById('publishedCalendar').innerHTML = 
+                    '<p style="text-align: center;">Error loading schedule data.</p>';
+            });
     }
-    
-    // Show the most recent version by default
-    displaySupervisorPublishedVersion(0, publishedVersions);
 }
 
-function displaySupervisorPublishedVersion(versionIndex, versions) {
-    const calendarEl = document.getElementById('supervisorPublishedCalendar');
-    if (!calendarEl || !versions || versions.length === 0) return;
+// Initialize Previous Calendar Function
+function initializePreviousCalendar() {
+    const calendarEl = document.getElementById('previousCalendar');
     
-    currentVersionIndex = versionIndex;
-    const version = versions[versionIndex];
-    
-    if (!version) return;
-    
-    // Always show delete button in supervisor section (if more than 1 version)
-    const showDeleteButton = versions.length > 1;
-    
-    // Create the version display
-    calendarEl.innerHTML = `
-        <div class="published-version-container">
-            <div class="version-header">
-                <div class="version-info">
-                    <h2>${version.month} ${version.year} Schedule</h2>
-                    <p class="version-meta">Published: ${new Date(version.timestamp).toLocaleString()}</p>
-                    <p class="version-number">Version ${versionIndex + 1} of ${versions.length}</p>
-                </div>
-                <div class="version-controls">
-                    <div class="version-navigation">
-                        <button class="nav-btn prev-btn" onclick="showSupervisorPreviousVersion()" ${versionIndex >= versions.length - 1 ? 'disabled' : ''}>
-                            ← Previous
-                        </button>
-                        <button class="nav-btn next-btn" onclick="showSupervisorNextVersion()" ${versionIndex <= 0 ? 'disabled' : ''}>
-                            Next →
-                        </button>
-                    </div>
-                    ${showDeleteButton ? `
-                    <div class="version-actions">
-                        <button class="delete-btn" onclick="deleteSupervisorVersion(${versionIndex})" title="Delete this version">
-                            🗑️ Delete
-                        </button>
-                    </div>
-                    ` : ''}
-                </div>
-            </div>
-            <div class="version-calendar" id="supervisorVersionCalendar">
-                <!-- Calendar will be rendered here -->
-            </div>
-        </div>
-    `;
-    
-    // Render the calendar snapshot
-    setTimeout(() => {
-        renderSupervisorVersionCalendar(version.snapshot);
-    }, 100);
+    try {
+        const history = localStorage.getItem('perfusionScheduleHistory');
+        if (history) {
+            const versions = JSON.parse(history);
+            if (versions.length > 0) {
+                const previousVersion = versions[0]; // Most recent previous version
+                const events = createEventsFromData(previousVersion.schedule || []);
+
+                previousCalendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,dayGridWeek,dayGridDay'
+                    },
+                    showNonCurrentDates: false,
+                    fixedWeekCount: false,
+                    events: events,
+                    eventContent: function(arg) {
+                        return { html: arg.event.title };
+                    }
+                });
+
+                previousCalendar.render();
+                return;
+            }
+        }
+        
+        // If no previous version found, show message
+        calendarEl.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No previous version available</p>';
+        
+    } catch (error) {
+        console.error('Error initializing previous calendar:', error);
+        calendarEl.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">Error loading previous version</p>';
+    }
 }
+
+// --- Version Tab Functions ---
+
+// Create version tabs based on available versions
 function createVersionTabs() {
     const tabsContainer = document.getElementById('versionTabs');
+    if (!tabsContainer) return;
+    
     tabsContainer.innerHTML = '';
     
     // Get current published version
@@ -723,8 +653,9 @@ function createVersionTabs() {
         const tab = createVersionTab(versionNum, version, false);
         tabsContainer.appendChild(tab);
     });
-
-     if (currentPublished) {
+    
+    // Create tab for current version
+    if (currentPublished) {
         const currentData = JSON.parse(currentPublished);
         const currentVersionNum = history.length + 1;
         const tab = createVersionTab(currentVersionNum, currentData, true);
@@ -734,14 +665,18 @@ function createVersionTabs() {
         tab.classList.add('active');
         currentDisplayedVersion = 'current';
     }
-        // Show/hide tabs container based on whether we have multiple versions
+    
+    // Show/hide tabs container based on whether we have multiple versions
     const tabsContainerDiv = document.getElementById('versionTabsContainer');
-    if (history.length === 0 && !currentPublished) {
-        tabsContainerDiv.style.display = 'none';
-    } else {
-        tabsContainerDiv.style.display = 'block';
+    if (tabsContainerDiv) {
+        if (history.length === 0 && !currentPublished) {
+            tabsContainerDiv.style.display = 'none';
+        } else {
+            tabsContainerDiv.style.display = 'block';
+        }
     }
 }
+
 // Create individual version tab
 function createVersionTab(versionNum, versionData, isCurrent) {
     const tab = document.createElement('div');
@@ -772,6 +707,7 @@ function createVersionTab(versionNum, versionData, isCurrent) {
     
     return tab;
 }
+
 // Handle version tab selection
 function selectVersionTab(version, versionData) {
     // Update active tab styling
@@ -826,438 +762,9 @@ function displayVersion(version, versionData) {
 // Update the last updated timestamp for the displayed version
 function updateLastUpdatedForVersion(versionData, version) {
     const lastUpdatedEl = document.getElementById('lastUpdated');
-    const timestamp = new Date(versionData.timestamp);
-    const versionText = version === 'current' ? 'Current Version' : `Version ${version}`;
-    lastUpdatedEl.textContent = `${versionText} - Published: ${timestamp.toLocaleString()}`;
-}
-
-function renderSupervisorVersionCalendar(snapshotData) {
-    const container = document.getElementById('supervisorVersionCalendar');
-    if (!container || !snapshotData) return;
-    
-    if (!snapshotData.events || snapshotData.events.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No calendar data available for this version</p>';
-        return;
-    }
-    
-    // Generate the calendar grid
-    container.innerHTML = `<div id="supervisorCalendarGrid" class="snapshot-calendar-grid"></div>`;
-    generateFullCalendarGrid('supervisorCalendarGrid', snapshotData);
-}
-
-// Replace the initializePublishedCalendar function with this simpler version:
-
-function initializePublishedCalendar() {
-    createVersionTabs();
-    
-    // Load and display the current (latest) version by default
-    const savedData = loadSavedData();
-    if (savedData && savedData.schedule) {
-        displayVersion('current', savedData);
-    } else {
-        // Fallback: load original data from Google Sheets
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
-            .then(response => response.json())
-            .then(data => {
-                const fallbackData = {
-                    schedule: data.values || [],
-                    timestamp: new Date().toISOString(),
-                    version: 1
-                };
-                displayVersion('current', fallbackData);
-            })
-            .catch(error => {
-                console.error('Error fetching data: ', error);
-                document.getElementById('publishedCalendar').innerHTML = 
-                    '<p style="text-align: center;">Error loading schedule data.</p>';
-            });
+    if (lastUpdatedEl) {
+        const timestamp = new Date(versionData.timestamp);
+        const versionText = version === 'current' ? 'Current Version' : `Version ${version}`;
+        lastUpdatedEl.textContent = `${versionText} - Published: ${timestamp.toLocaleString()}`;
     }
 }
-    
-    initializePublishedCalendarWithData(scheduleData);
-}
-
-function initializePublishedCalendarWithData(scheduleData) {
-    const calendarEl = document.getElementById('publishedCalendar');
-    const events = createEventsFromData(scheduleData);
-
-    publishedCalendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,dayGridWeek,dayGridDay'
-        },
-        showNonCurrentDates: false,
-        fixedWeekCount: false,
-        events: events,
-        eventContent: function(arg) {
-            return { html: arg.event.title };
-        }
-    });
-
-    publishedCalendar.render();
-}
-
-function getPublishedVersions() {
-    const versions = localStorage.getItem('perfusionPublishedVersions');
-    return versions ? JSON.parse(versions) : [];
-}
-
-let currentVersionIndex = 0;
-
-function renderVersionCalendar(snapshotData) {
-    const container = document.getElementById('versionCalendar');
-    if (!container || !snapshotData) return;
-    
-    if (!snapshotData.events || snapshotData.events.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No calendar data available for this version</p>';
-        return;
-    }
-    
-    // Generate the calendar grid
-    container.innerHTML = `<div id="calendarGrid" class="snapshot-calendar-grid"></div>`;
-    generateFullCalendarGrid('calendarGrid', snapshotData);
-}
-
-function generateFullCalendarGrid(gridId, snapshotData) {
-    const grid = document.getElementById(gridId);
-    if (!grid) return;
-    
-    const events = snapshotData.events || [];
-    const year = snapshotData.year || new Date().getFullYear();
-    const monthIndex = new Date(`${snapshotData.month} 1, ${year}`).getMonth();
-    
-    // Create event map by date
-    const eventsByDate = {};
-    events.forEach(event => {
-        const date = event.start;
-        if (!eventsByDate[date]) {
-            eventsByDate[date] = [];
-        }
-        eventsByDate[date].push(event);
-    });
-    
-    // Generate calendar grid
-    const firstDay = new Date(year, monthIndex, 1);
-    const lastDay = new Date(year, monthIndex + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start from Sunday
-    
-    let calendarHTML = `
-        <div class="calendar-grid">
-            <div class="calendar-header">
-                <div class="day-header">Sun</div>
-                <div class="day-header">Mon</div>
-                <div class="day-header">Tue</div>
-                <div class="day-header">Wed</div>
-                <div class="day-header">Thu</div>
-                <div class="day-header">Fri</div>
-                <div class="day-header">Sat</div>
-            </div>
-            <div class="calendar-body">
-    `;
-    
-    // Generate 6 weeks of calendar
-    for (let week = 0; week < 6; week++) {
-        for (let day = 0; day < 7; day++) {
-            const currentDate = new Date(startDate);
-            currentDate.setDate(startDate.getDate() + (week * 7) + day);
-            
-            const dateStr = currentDate.toISOString().split('T')[0];
-            const isCurrentMonth = currentDate.getMonth() === monthIndex;
-            const dayEvents = eventsByDate[dateStr] || [];
-            
-            calendarHTML += `
-                <div class="calendar-day ${!isCurrentMonth ? 'other-month' : ''}">
-                    <div class="day-number">${currentDate.getDate()}</div>
-                    <div class="day-events">
-                        ${dayEvents.map(event => `
-                            <div class="event-content" style="background-color: ${event.backgroundColor || '#ccc'}; color: ${event.textColor || '#000'};">
-                                ${event.title || ''}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-    }
-    
-    calendarHTML += `
-            </div>
-        </div>
-    `;
-    
-    grid.innerHTML = calendarHTML;
-}
-
-// Make all functions globally accessible for onclick handlers
-window.showPage = showPage;
-window.requestEditAccess = requestEditAccess;
-window.requestManagePublishedAccess = requestManagePublishedAccess;
-window.closePasswordModal = closePasswordModal;
-window.checkPassword = checkPassword;
-window.clearEdits = clearEdits;
-window.publishSchedule = publishSchedule;
-window.openEditModal = openEditModal;
-window.closeEditModal = closeEditModal;
-window.saveEdit = saveEdit;
-
-function refreshPublishedScheduleDisplay() {
-    const calendarEl = document.getElementById('publishedCalendar');
-    if (!calendarEl) return;
-    
-    // Get published versions
-    const publishedVersions = getPublishedVersions();
-    
-    if (publishedVersions.length === 0) {
-        calendarEl.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">No published schedules yet. Go to Supervisor Edit to publish a schedule.</p>';
-        return;
-    }
-    
-    // Group versions by month and display them
-    displayGroupedPublishedSchedules(publishedVersions);
-}
-
-function refreshSupervisorPublishedScheduleDisplay() {
-    const calendarEl = document.getElementById('supervisorPublishedCalendar');
-    if (!calendarEl) return;
-    
-    // Get published versions
-    const publishedVersions = getPublishedVersions();
-    
-    if (publishedVersions.length === 0) {
-        calendarEl.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">No published schedules yet. Go to Supervisor Edit to publish a schedule.</p>';
-        return;
-    }
-    
-    // Group versions by month and display them for supervisor view
-    displayGroupedSupervisorPublishedSchedules(publishedVersions);
-}
-
-function groupVersionsByMonth(versions) {
-    const grouped = {};
-    
-    versions.forEach(version => {
-        const monthKey = `${version.year}-${version.month}`;
-        if (!grouped[monthKey]) {
-            grouped[monthKey] = {
-                month: version.month,
-                year: version.year,
-                versions: []
-            };
-        }
-        grouped[monthKey].versions.push(version);
-    });
-    
-    // Sort months by year and month (most recent first)
-    const sortedMonths = Object.values(grouped).sort((a, b) => {
-        if (a.year !== b.year) {
-            return b.year - a.year;
-        }
-        const monthA = new Date(`${a.month} 1, ${a.year}`).getMonth();
-        const monthB = new Date(`${b.month} 1, ${b.year}`).getMonth();
-        return monthB - monthA;
-    });
-    
-    // Sort versions within each month by timestamp (most recent first)
-    sortedMonths.forEach(monthGroup => {
-        monthGroup.versions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    });
-    
-    return sortedMonths;
-}
-
-function displayGroupedPublishedSchedules(versions) {
-    const calendarEl = document.getElementById('publishedCalendar');
-    if (!calendarEl) return;
-    
-    const groupedMonths = groupVersionsByMonth(versions);
-    
-    let html = '<div class="grouped-schedules-container">';
-    
-    groupedMonths.forEach((monthGroup, monthIndex) => {
-        html += `
-            <div class="month-group">
-                <div class="month-header">
-                    <h2>${monthGroup.month} ${monthGroup.year}</h2>
-                    <p class="version-count">${monthGroup.versions.length} version${monthGroup.versions.length > 1 ? 's' : ''}</p>
-                </div>
-        `;
-        
-        monthGroup.versions.forEach((version, versionIndex) => {
-            html += `
-                <div class="version-section">
-                    <div class="version-info-header">
-                        <h3>Version ${versionIndex + 1}</h3>
-                        <p class="version-meta">Published: ${new Date(version.timestamp).toLocaleString()}</p>
-                    </div>
-                    <div class="version-calendar" id="monthCalendar_${monthIndex}_${versionIndex}">
-                        <!-- Calendar will be rendered here -->
-                    </div>
-                </div>
-            `;
-        });
-        
-        html += '</div>';
-    });
-    
-    html += '</div>';
-    calendarEl.innerHTML = html;
-    
-    // Render each calendar
-    groupedMonths.forEach((monthGroup, monthIndex) => {
-        monthGroup.versions.forEach((version, versionIndex) => {
-            setTimeout(() => {
-                renderVersionCalendarById(`monthCalendar_${monthIndex}_${versionIndex}`, version.snapshot);
-            }, 100);
-        });
-    });
-}
-
-function displayGroupedSupervisorPublishedSchedules(versions) {
-    const calendarEl = document.getElementById('supervisorPublishedCalendar');
-    if (!calendarEl) return;
-    
-    const groupedMonths = groupVersionsByMonth(versions);
-    
-    let html = '<div class="grouped-schedules-container">';
-    
-    groupedMonths.forEach((monthGroup, monthIndex) => {
-        html += `
-            <div class="month-group">
-                <div class="month-header">
-                    <h2>${monthGroup.month} ${monthGroup.year}</h2>
-                    <p class="version-count">${monthGroup.versions.length} version${monthGroup.versions.length > 1 ? 's' : ''}</p>
-                </div>
-        `;
-        
-        monthGroup.versions.forEach((version, versionIndex) => {
-            const actualVersionIndex = versions.findIndex(v => v.id === version.id);
-            html += `
-                <div class="version-section">
-                    <div class="version-info-header">
-                        <h3>Version ${versionIndex + 1}</h3>
-                        <p class="version-meta">Published: ${new Date(version.timestamp).toLocaleString()}</p>
-                        ${versions.length > 1 ? `
-                        <button class="delete-btn small-delete" onclick="deleteSupervisorVersionFromGroup(${actualVersionIndex})" title="Delete this version">
-                            🗑️ Delete
-                        </button>
-                        ` : ''}
-                    </div>
-                    <div class="version-calendar" id="supervisorMonthCalendar_${monthIndex}_${versionIndex}">
-                        <!-- Calendar will be rendered here -->
-                    </div>
-                </div>
-            `;
-        });
-        
-        html += '</div>';
-    });
-    
-    html += '</div>';
-    calendarEl.innerHTML = html;
-    
-    // Render each calendar
-    groupedMonths.forEach((monthGroup, monthIndex) => {
-        monthGroup.versions.forEach((version, versionIndex) => {
-            setTimeout(() => {
-                renderVersionCalendarById(`supervisorMonthCalendar_${monthIndex}_${versionIndex}`, version.snapshot);
-            }, 100);
-        });
-    });
-}
-
-function renderVersionCalendarById(containerId, snapshotData) {
-    const container = document.getElementById(containerId);
-    if (!container || !snapshotData) return;
-    
-    if (!snapshotData.events || snapshotData.events.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No calendar data available for this version</p>';
-        return;
-    }
-    
-    // Generate the calendar grid
-    container.innerHTML = `<div id="${containerId}Grid" class="snapshot-calendar-grid"></div>`;
-    generateFullCalendarGrid(`${containerId}Grid`, snapshotData);
-}
-
-// Supervisor published schedule navigation functions
-window.showSupervisorPreviousVersion = function() {
-    const versions = getPublishedVersions();
-    if (currentVersionIndex < versions.length - 1) {
-        displaySupervisorPublishedVersion(currentVersionIndex + 1, versions);
-    }
-};
-
-window.showSupervisorNextVersion = function() {
-    const versions = getPublishedVersions();
-    if (currentVersionIndex > 0) {
-        displaySupervisorPublishedVersion(currentVersionIndex - 1, versions);
-    }
-};
-
-// Supervisor delete function
-window.deleteSupervisorVersion = function(versionIndex) {
-    const versions = getPublishedVersions();
-    
-    if (versions.length <= 1) {
-        alert('Cannot delete the last remaining version.');
-        return;
-    }
-    
-    const version = versions[versionIndex];
-    const confirmDelete = confirm(`Are you sure you want to delete this version?\n\n${version.month} ${version.year} Schedule\nPublished: ${new Date(version.timestamp).toLocaleString()}\n\nThis action cannot be undone.`);
-    
-    if (!confirmDelete) {
-        return;
-    }
-    
-    // Remove the version from the array
-    versions.splice(versionIndex, 1);
-    
-    // Save updated versions back to localStorage
-    localStorage.setItem('perfusionPublishedVersions', JSON.stringify(versions));
-    
-    // Determine which version to show next
-    let newVersionIndex = versionIndex;
-    if (newVersionIndex >= versions.length) {
-        newVersionIndex = versions.length - 1; // Show the last version if we deleted the current last one
-    }
-    
-    // Update the current index
-    currentVersionIndex = newVersionIndex;
-    
-    // Refresh the supervisor display
-    displaySupervisorPublishedVersion(newVersionIndex, versions);
-    
-    console.log(`Deleted version ${versionIndex + 1}. Now showing version ${newVersionIndex + 1} of ${versions.length}`);
-    alert(`Version deleted successfully. Now showing version ${newVersionIndex + 1} of ${versions.length}.`);
-};
-
-// Navigation functions for published versions
-window.showPreviousVersion = function() {
-    const versions = getPublishedVersions();
-    if (currentVersionIndex < versions.length - 1) {
-        displayPublishedVersion(currentVersionIndex + 1, versions);
-    }
-};
-
-window.showNextVersion = function() {
-    const versions = getPublishedVersions();
-    if (currentVersionIndex > 0) {
-        displayPublishedVersion(currentVersionIndex - 1, versions);
-    }
-};
-
-// Allow Enter key to submit password
-document.addEventListener('DOMContentLoaded', function() {
-    const passwordInput = document.getElementById('passwordInput');
-    if (passwordInput) {
-        passwordInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                checkPassword();
-            }
-        });
-    }
-});
