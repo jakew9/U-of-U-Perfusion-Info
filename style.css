@@ -23,6 +23,21 @@ body {
 
 .page.active {
     display: block;
+    position: relative;
+    z-index: 1;
+}
+
+/* Fix for page switching conflicts */
+.page:not(.active) {
+    display: none !important;
+}
+
+.page.active {
+    display: block !important;
+}
+
+#welcomePage.active {
+    display: flex !important;
 }
 
 /* Welcome Page Styles */
