@@ -199,6 +199,14 @@ function requestEditAccess() {
     document.getElementById('passwordInput').focus();
 }
 
+function requestManageAccess() {
+    showManagePublished();
+}
+
+function requestManageAccess() {
+    showManagePublished();
+}
+
 function closePasswordModal() {
     document.getElementById('passwordModal').style.display = 'none';
     document.getElementById('passwordInput').value = '';
