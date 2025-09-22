@@ -209,12 +209,13 @@ function displayPublishedVersions() {
         versionsList.appendChild(versionItem);
     }
     
-    // Show previous versions (newest first)
-    history.forEach((version, index) => {
-        const versionNum = history.length - index;
+    // Show previous versions (newest first - descending order)
+    for (let i = history.length - 1; i >= 0; i--) {
+        const version = history[i];
+        const versionNum = i + 1; // Version numbers 1, 2, 3... oldest to newest
         const versionItem = createVersionItem(versionNum, version, false);
         versionsList.appendChild(versionItem);
-    });
+    }
     
     // Show/hide clear all button and no versions message
     if (history.length === 0 && !currentPublished) {
@@ -654,9 +655,9 @@ function initializeVersionTabs() {
             tabsContainer.appendChild(tab);
         }
         
-        // Add historical version tabs (newest first)
+        // Add historical version tabs (newest to oldest)
         history.forEach((version, index) => {
-            const versionNum = history.length - index;
+            const versionNum = history.length - index; // This makes newest = highest number
             const tab = createVersionTab(versionNum, version, false);
             tabsContainer.appendChild(tab);
         });
