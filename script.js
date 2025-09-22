@@ -1,7 +1,7 @@
 // Google Sheets API Configuration
-const API_KEY = 'AIzaSyB5KKSmVFrKNfEs0B7VJYdnMhyY7JB12bE';
+const API_KEY = 'AIzaSyCyCEmSvunsn8C82AwhSyX5joXy2hstPls';
 const SHEET_ID = '1pKNJK3nvpcwQor1obQm1V6qiWfwOPmImV361Qfqul8E';
-const RANGE = 'Sheet1!A13:R100'; // Adjust range as needed
+const RANGE = 'Sheet2!A13:R100'; // Changed from Sheet1 to Sheet2
 
 // Global variables
 let calendar, supervisorViewCalendar, supervisorEditCalendar, previousCalendar;
