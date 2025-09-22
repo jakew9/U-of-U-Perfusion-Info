@@ -621,13 +621,38 @@ function publishSchedule() {
     showPage('publishedSchedulePage');
 }
 
-// Version tabs functions (simplified for Google Sheets integration)
+// Version tabs functions - now shows all versions with navigation
 function initializeVersionTabs() {
     const tabsContainer = document.getElementById('versionTabs');
     const tabsContainerDiv = document.getElementById('versionTabsContainer');
     
-    // Hide version tabs since we're using live Google Sheets data
-    if (tabsContainerDiv) {
+    // Get current and historical versions
+    const currentPublished = localStorage.getItem('perfusionPublishedSchedule');
+    const historyData = localStorage.getItem('perfusionScheduleHistory');
+    const history = historyData ? JSON.parse(historyData) : [];
+    
+    tabsContainer.innerHTML = '';
+    
+    // If we have versions to show, display the tabs
+    if (currentPublished || history.length > 0) {
+        tabsContainerDiv.style.display = 'block';
+        
+        // Add current version tab
+        if (currentPublished) {
+            const currentData = JSON.parse(currentPublished);
+            const currentVersionNum = history.length + 1;
+            const tab = createVersionTab(currentVersionNum, currentData, true);
+            tabsContainer.appendChild(tab);
+        }
+        
+        // Add historical version tabs (newest first)
+        history.forEach((version, index) => {
+            const versionNum = history.length - index;
+            const tab = createVersionTab(versionNum, version, false);
+            tabsContainer.appendChild(tab);
+        });
+    } else {
+        // Hide tabs container if no versions
         tabsContainerDiv.style.display = 'none';
     }
 }
@@ -635,19 +660,24 @@ function initializeVersionTabs() {
 function createVersionTab(versionNum, versionData, isCurrent) {
     const tab = document.createElement('button');
     tab.className = `version-tab ${isCurrent ? 'active' : ''}`;
-    tab.textContent = `Version ${versionNum}`;
-    tab.onclick = () => selectVersionTab(versionNum, versionData);
+    tab.textContent = `Version ${versionNum}${isCurrent ? ' (Current)' : ''}`;
+    tab.onclick = () => selectVersionTab(versionNum, versionData, isCurrent);
     return tab;
 }
 
-function selectVersionTab(versionNum, versionData) {
+function selectVersionTab(versionNum, versionData, isCurrent) {
     // Update active tab
     document.querySelectorAll('.version-tab').forEach(tab => {
         tab.classList.remove('active');
     });
-    if (event && event.target) {
-        event.target.classList.add('active');
-    }
+    
+    // Find and activate the clicked tab
+    const tabs = document.querySelectorAll('.version-tab');
+    tabs.forEach(tab => {
+        if (tab.textContent.includes(`Version ${versionNum}`)) {
+            tab.classList.add('active');
+        }
+    });
     
     // Update calendar with version data
     if (calendar) {
@@ -662,7 +692,8 @@ function selectVersionTab(versionNum, versionData) {
     // Update last updated info
     const lastUpdatedDiv = document.getElementById('lastUpdated');
     const date = new Date(versionData.timestamp);
-    lastUpdatedDiv.textContent = `Version ${versionNum} - Last updated: ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`;
+    const status = isCurrent ? 'Current Published Schedule' : `Version ${versionNum} (Archived)`;
+    lastUpdatedDiv.textContent = `${status} - Published: ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`;
 }
 
 // Update schedule information display
@@ -675,7 +706,7 @@ function updateScheduleInfo(events) {
     if (publishedData) {
         const data = JSON.parse(publishedData);
         const date = new Date(data.timestamp);
-        lastUpdatedDiv.textContent = `Published Schedule - Last published: ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`;
+        lastUpdatedDiv.textContent = `Current Published Schedule - Last published: ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`;
     } else if (events.length > 0) {
         const now = new Date();
         lastUpdatedDiv.textContent = `Schedule loaded from Google Sheets at ${now.toLocaleString()}`;
@@ -683,7 +714,7 @@ function updateScheduleInfo(events) {
         lastUpdatedDiv.textContent = 'No schedule data available';
     }
     
-    // Initialize version tabs (will hide them for Google Sheets mode)
+    // Initialize version tabs
     initializeVersionTabs();
 }
 
