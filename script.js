@@ -120,23 +120,32 @@ function getTextColor(backgroundColor) {
     return darkColors.includes(backgroundColor) ? 'white' : 'black';
 }
 
-// Modified function to load events from Google Sheets instead of localStorage
+// Modified function to load events - prioritizes published versions over Google Sheets
 async function loadPublishedEvents() {
-    // Try to load from Google Sheets first
-    const googleSheetsEvents = await fetchScheduleFromGoogleSheets();
-    
-    if (googleSheetsEvents.length > 0) {
-        return googleSheetsEvents;
-    }
-    
-    // Fallback to localStorage if Google Sheets fails
+    // First check for locally published version
     const publishedData = localStorage.getItem('perfusionPublishedSchedule');
     if (publishedData) {
         const data = JSON.parse(publishedData);
         return data.events || [];
     }
     
-    return [];
+    // If no published version, fallback to Google Sheets
+    const googleSheetsEvents = await fetchScheduleFromGoogleSheets();
+    return googleSheetsEvents;
+}
+
+// Modified function to load events for EDITING - starts with latest published, falls back to Google Sheets
+async function loadEventsForEditing() {
+    // First check for locally published version (latest approved schedule)
+    const publishedData = localStorage.getItem('perfusionPublishedSchedule');
+    if (publishedData) {
+        const data = JSON.parse(publishedData);
+        return data.events || [];
+    }
+    
+    // If no published version exists, start with Google Sheets as baseline
+    const googleSheetsEvents = await fetchScheduleFromGoogleSheets();
+    return googleSheetsEvents;
 }
 
 // Page navigation function
@@ -481,7 +490,8 @@ async function initializeSupervisorViewCalendar() {
 }
 
 async function initializeSupervisorEditCalendar() {
-    const events = await loadPublishedEvents();
+    // Start with latest published version, or Google Sheets if no published version exists
+    const events = await loadEventsForEditing();
     
     supervisorEditCalendar = new FullCalendar.Calendar(document.getElementById('supervisorEditCalendar'), {
         initialView: 'dayGridMonth',
@@ -659,11 +669,18 @@ function selectVersionTab(versionNum, versionData) {
 function updateScheduleInfo(events) {
     const lastUpdatedDiv = document.getElementById('lastUpdated');
     
-    if (events.length > 0) {
+    // Check if we have a published version
+    const publishedData = localStorage.getItem('perfusionPublishedSchedule');
+    
+    if (publishedData) {
+        const data = JSON.parse(publishedData);
+        const date = new Date(data.timestamp);
+        lastUpdatedDiv.textContent = `Published Schedule - Last published: ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`;
+    } else if (events.length > 0) {
         const now = new Date();
         lastUpdatedDiv.textContent = `Schedule loaded from Google Sheets at ${now.toLocaleString()}`;
     } else {
-        lastUpdatedDiv.textContent = 'No schedule data available from Google Sheets';
+        lastUpdatedDiv.textContent = 'No schedule data available';
     }
     
     // Initialize version tabs (will hide them for Google Sheets mode)
