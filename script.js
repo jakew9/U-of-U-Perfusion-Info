@@ -156,7 +156,9 @@ function showPage(pageId) {
     document.getElementById(pageId).classList.add('active');
     
     // Initialize calendars when needed
-    if (pageId === 'supervisorViewPage' && !supervisorViewCalendar) {
+    if (pageId === 'supervisorPage') {
+        // Supervisor page - no additional initialization needed
+    } else if (pageId === 'supervisorViewPage' && !supervisorViewCalendar) {
         initializeSupervisorViewCalendar();
     } else if (pageId === 'supervisorEditPage' && !supervisorEditCalendar) {
         initializeSupervisorEditCalendar();
@@ -167,6 +169,12 @@ function showPage(pageId) {
     } else if (pageId === 'managePublishedPage') {
         initializeManagePublished();
     }
+}
+
+// Function to show supervisor page with password protection
+function showSupervisorPage() {
+    document.getElementById('passwordModal').style.display = 'block';
+    document.getElementById('passwordInput').focus();
 }
 
 // Function to show the manage published page
@@ -275,7 +283,7 @@ function previewVersion(versionNum, isCurrent) {
             if (versionData) {
                 showPage('publishedSchedulePage');
                 setTimeout(() => {
-                    selectVersionTab(versionNum, versionData);
+                    selectVersionTab(versionNum, versionData, false);
                 }, 500);
             }
         }
@@ -339,11 +347,12 @@ function clearAllVersions() {
 
 // Password modal functions
 function requestEditAccess() {
-    document.getElementById('passwordModal').style.display = 'block';
-    document.getElementById('passwordInput').focus();
+    // No longer needs password - already behind supervisor wall
+    showPage('supervisorEditPage');
 }
 
 function requestManageAccess() {
+    // No longer needs password - already behind supervisor wall
     showManagePublished();
 }
 
@@ -359,7 +368,7 @@ function checkPassword() {
     
     if (enteredPassword === SUPERVISOR_PASSWORD) {
         closePasswordModal();
-        showPage('supervisorEditPage');
+        showPage('supervisorPage'); // Go to supervisor menu after successful login
     } else {
         errorDiv.textContent = 'Incorrect password. Please try again.';
         errorDiv.style.display = 'block';
@@ -617,7 +626,7 @@ function publishSchedule() {
     localStorage.setItem('perfusionPublishedSchedule', JSON.stringify(publishData));
     currentPublishedVersion++;
     
-    alert('Schedule published successfully! Note: This saves your manual edits locally. The main schedule still comes from Google Sheets.');
+    alert('Schedule published successfully!');
     showPage('publishedSchedulePage');
 }
 
