@@ -43,6 +43,26 @@ function parseScheduleData(rows) {
         
         if (!dateValue) return; // Skip rows without dates
         
+        // Clean up night shift - remove spaces, NBSP, "Blank" tokens, and empty entries
+        const cleanNightShift = nightShift
+          .replace(/blank/gi, '') // Remove "Blank" (case insensitive)
+          .replace(/[\s\u00A0]/g, '') // Remove all spaces and NBSP
+          .replace(/\/+/g, '/') // Replace multiple slashes with single
+          .replace(/^\/|\/$/g, ''); // Remove leading/trailing slashes
+        
+        // Also clean day shift to be consistent
+        const cleanDayShift = dayShift
+          .replace(/blank/gi, '')
+          .replace(/[\s\u00A0]/g, '')
+          .replace(/\/+/g, '/')
+          .replace(/^\/|\/$/g, '');
+        
+        // Debug logging for problematic dates
+        const dateStr = dateValue.toString();
+        if (dateStr.includes('Sep 04') || dateStr.includes('Sep 17') || dateStr.includes('September 4') || dateStr.includes('September 17')) {
+            console.log(`Debug ${dateStr}: dayShift="${dayShift}", nightShift="${nightShift}", cleanDayShift="${cleanDayShift}", cleanNightShift="${cleanNightShift}"`);
+        }
+        
         // Parse date - handle different date formats
         let date;
         if (dateValue instanceof Date) {
@@ -79,9 +99,9 @@ function parseScheduleData(rows) {
         
         // Only add event if there's actual schedule data
         if (title.trim()) {
-            // Count staff for each shift
-            const dayStaffCount = dayShift ? dayShift.split('/').filter(s => s.trim()).length : 0;
-            const nightStaffCount = nightShift ? nightShift.split('/').filter(s => s.trim()).length : 0;
+            // Count staff for each shift - use cleaned values
+            const dayStaffCount = cleanDayShift ? cleanDayShift.split('/').filter(s => s.trim()).length : 0;
+            const nightStaffCount = cleanNightShift ? cleanNightShift.split('/').filter(s => s.trim()).length : 0;
             const totalStaff = dayStaffCount + nightStaffCount;
             
             // Check if it's a weekend (Saturday = 6, Sunday = 0)
@@ -102,7 +122,7 @@ function parseScheduleData(rows) {
                 }
             } else {
                 // Weekday rules: need 6 people total
-                // Check if night shift is missing (highest priority)
+                // Check if night shift is missing (highest priority) - use cleaned night shift
                 if (nightStaffCount === 0 && dayStaffCount > 0) {
                     backgroundColor = '#26de81'; // Green - missing night shift needs attention
                 }
@@ -133,7 +153,9 @@ function parseScheduleData(rows) {
                 allDay: true,
                 extendedProps: {
                     dayShift: dayShift.trim(),
-                    nightShift: nightShift.trim(),
+                    nightShift: nightShift.trim(), // Keep original for display
+                    cleanDayShift: cleanDayShift, // Store cleaned versions for logic
+                    cleanNightShift: cleanNightShift,
                     source: 'googleSheets'
                 }
             });
@@ -470,8 +492,12 @@ function saveEdit() {
         // Determine background color
         let eventColor = backgroundColor;
         if (backgroundColor === 'auto') {
-            const dayCount = dayShift ? dayShift.split('/').filter(s => s.trim()).length : 0;
-            const nightCount = nightShift ? nightShift.split('/').filter(s => s.trim()).length : 0;
+            // Clean the input values to remove "Blank" tokens
+            const cleanDayShift = dayShift.replace(/blank/gi, '').replace(/[\s\u00A0]/g, '').replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
+            const cleanNightShift = nightShift.replace(/blank/gi, '').replace(/[\s\u00A0]/g, '').replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
+            
+            const dayCount = cleanDayShift ? cleanDayShift.split('/').filter(s => s.trim()).length : 0;
+            const nightCount = cleanNightShift ? cleanNightShift.split('/').filter(s => s.trim()).length : 0;
             const totalStaff = dayCount + nightCount;
             
             // Check if it's a weekend
