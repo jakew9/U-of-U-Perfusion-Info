@@ -769,6 +769,71 @@ async function refreshScheduleFromSheets() {
     alert('Schedule refreshed from Google Sheets!');
 }
 
+// Restart schedule from Google Sheets (clears local data)
+async function restartFromGoogleSheets() {
+    const confirmMsg = `This will clear all published versions and restart with fresh data from Google Sheets. This action cannot be undone. Are you sure?`;
+    
+    if (confirm(confirmMsg)) {
+        try {
+            // Clear all local storage data
+            localStorage.removeItem('perfusionPublishedSchedule');
+            localStorage.removeItem('perfusionScheduleHistory');
+            
+            // Reset version counter
+            currentPublishedVersion = 1;
+            
+            // Reinitialize the edit calendar with fresh Google Sheets data
+            if (supervisorEditCalendar) {
+                supervisorEditCalendar.destroy();
+                supervisorEditCalendar = null;
+            }
+            
+            // Load fresh data from Google Sheets
+            const googleSheetsEvents = await fetchScheduleFromGoogleSheets();
+            
+            supervisorEditCalendar = new FullCalendar.Calendar(document.getElementById('supervisorEditCalendar'), {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                events: googleSheetsEvents,
+                height: 'auto',
+                eventDisplay: 'block',
+                dateClick: function(info) {
+                    const existingEvent = supervisorEditCalendar.getEvents().find(event => 
+                        event.startStr === info.dateStr
+                    );
+                    
+                    if (existingEvent) {
+                        const dayShift = existingEvent.extendedProps.dayShift || '';
+                        const nightShift = existingEvent.extendedProps.nightShift || '';
+                        
+                        openEditModal(info.dateStr, dayShift, nightShift, existingEvent.backgroundColor);
+                    } else {
+                        openEditModal(info.dateStr);
+                    }
+                },
+                eventClick: function(info) {
+                    const event = info.event;
+                    const dayShift = event.extendedProps.dayShift || '';
+                    const nightShift = event.extendedProps.nightShift || '';
+                    
+                    openEditModal(info.event.startStr, dayShift, nightShift, event.backgroundColor);
+                }
+            });
+            
+            supervisorEditCalendar.render();
+            
+            alert('Schedule restarted with fresh data from Google Sheets! All local versions have been cleared.');
+        } catch (error) {
+            console.error('Error restarting from Google Sheets:', error);
+            alert('Error loading fresh data from Google Sheets. Please try again.');
+        }
+    }
+}
+
 // Close modals when clicking outside
 window.onclick = function(event) {
     const passwordModal = document.getElementById('passwordModal');
