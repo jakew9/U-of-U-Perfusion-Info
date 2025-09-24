@@ -361,6 +361,73 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* FullCalendar Event Text Improvements */
+.fc-event-title {
+    white-space: pre-line !important;
+    word-wrap: break-word !important;
+    overflow: hidden !important;
+    line-height: 1.2 !important;
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3) !important;
+}
+
+.fc-daygrid-event {
+    white-space: pre-line !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    min-height: 20px !important;
+}
+
+.fc-daygrid-event:hover {
+    transform: scale(1.02) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    z-index: 100 !important;
+}
+
+.fc-daygrid-event-harness {
+    margin-bottom: 1px !important;
+}
+
+.fc-event-main {
+    padding: 2px 4px !important;
+}
+
+/* Make calendar cells taller to accommodate more text */
+.fc-daygrid-day-frame {
+    min-height: 80px !important;
+}
+
+.fc-scrollgrid-sync-table {
+    height: auto !important;
+}
+
+/* Improve text contrast */
+.fc-event-title-container {
+    color: inherit !important;
+}
+
+/* Click hint for better UX */
+.fc-daygrid-event::after {
+    content: "📋 Click for details";
+    position: absolute;
+    bottom: -15px;
+    left: 0;
+    right: 0;
+    font-size: 0.7rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 1px 2px;
+    border-radius: 3px;
+}
+
+.fc-daygrid-event:hover::after {
+    opacity: 1;
+}
+
 /* Supervisor Controls */
 .supervisor-controls {
     background: rgba(255, 255, 255, 0.95);
