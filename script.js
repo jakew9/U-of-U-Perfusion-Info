@@ -462,8 +462,9 @@ function saveEdit() {
         let title = '';
         if (dayShift) title += `Day: ${dayShift}`;
         if (nightShift) {
-            if (title) title += '\n';
-            title += `Night: ${nightShift}`;
+            if (title) title += '\nNight: ';
+            else title += 'Night: ';
+            title += `${nightShift}`;
         }
         
         // Determine background color
@@ -561,10 +562,24 @@ async function initializeSupervisorViewCalendar() {
             const event = info.event;
             const dayShift = event.extendedProps.dayShift || '';
             const nightShift = event.extendedProps.nightShift || '';
+            const eventDate = event.start.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
             
-            let message = `Schedule for ${event.start.toLocaleDateString()}:\n\n`;
-            if (dayShift) message += `Day Shift: ${dayShift}\n`;
-            if (nightShift) message += `Night Shift: ${nightShift}`;
+            let message = `Schedule for ${eventDate}\n\n`;
+            if (dayShift) {
+                message += `Day Shift:\n${dayShift}\n\n`;
+            }
+            if (nightShift) {
+                message += `Night Shift:\n${nightShift}`;
+            }
+            
+            if (!dayShift && !nightShift) {
+                message += 'No staff assigned for this date.';
+            }
             
             alert(message);
         }
@@ -635,10 +650,24 @@ async function initializePublishedCalendar() {
             const event = info.event;
             const dayShift = event.extendedProps.dayShift || '';
             const nightShift = event.extendedProps.nightShift || '';
+            const eventDate = event.start.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
             
-            let message = `Schedule for ${event.start.toLocaleDateString()}:\n\n`;
-            if (dayShift) message += `Day Shift: ${dayShift}\n`;
-            if (nightShift) message += `Night Shift: ${nightShift}`;
+            let message = `Schedule for ${eventDate}\n\n`;
+            if (dayShift) {
+                message += `Day Shift:\n${dayShift}\n\n`;
+            }
+            if (nightShift) {
+                message += `Night Shift:\n${nightShift}`;
+            }
+            
+            if (!dayShift && !nightShift) {
+                message += 'No staff assigned for this date.';
+            }
             
             alert(message);
         }
