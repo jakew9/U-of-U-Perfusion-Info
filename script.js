@@ -122,23 +122,24 @@ function parseScheduleData(rows) {
                 }
             } else {
                 // Weekday rules: need 6 people total
-                // Check if night shift is missing (highest priority) - use cleaned night shift
-                if (nightStaffCount === 0 && dayStaffCount > 0) {
+                // PRIORITY 1: Check if night shift is completely missing (highest priority)
+                if (cleanNightShift === '' && cleanDayShift !== '') {
                     backgroundColor = '#26de81'; // Green - missing night shift needs attention
+                    console.log(`Missing night shift detected for ${formattedDate}: dayStaff=${dayStaffCount}, nightStaff=${nightStaffCount}`);
                 }
-                // 6 total people = fully staffed (no color/default)
+                // PRIORITY 2: 6 total people = fully staffed (no color/default)
                 else if (totalStaff === 6) {
                     backgroundColor = '#f8f9fa'; // Light gray/no color - fully staffed
                 }
-                // 5 people = 1 missing (green)
+                // PRIORITY 3: 5 people = 1 missing (green)
                 else if (totalStaff === 5) {
                     backgroundColor = '#26de81'; // Green - 1 person short
                 }
-                // 4 or less people = understaffed (red)
+                // PRIORITY 4: 4 or less people = understaffed (red)
                 else if (totalStaff <= 4 && totalStaff > 0) {
                     backgroundColor = '#ff6b6b'; // Red - critically understaffed
                 }
-                // No staff at all
+                // PRIORITY 5: No staff at all
                 else {
                     backgroundColor = '#6c757d'; // Gray - no staff assigned
                 }
@@ -480,13 +481,16 @@ function saveEdit() {
     const backgroundColor = backgroundColorRadio.value;
     
     if (currentEditingDate && supervisorEditCalendar) {
-        // Create event title (night shift below day shift)
+        // Create event title (night shift below day shift) - filter out "Blank" tokens
         let title = '';
-        if (dayShift) title += `Day: ${dayShift}`;
-        if (nightShift) {
+        const displayDayShift = cleanDayShift || '';
+        const displayNightShift = cleanNightShift || '';
+        
+        if (displayDayShift) title += `Day: ${displayDayShift}`;
+        if (displayNightShift) {
             if (title) title += '\nNight: ';
             else title += 'Night: ';
-            title += `${nightShift}`;
+            title += displayNightShift;
         }
         
         // Determine background color
@@ -517,23 +521,23 @@ function saveEdit() {
                 }
             } else {
                 // Weekday rules: need 6 people total
-                // Check if night shift is missing (highest priority)
-                if (nightCount === 0 && dayCount > 0) {
+                // PRIORITY 1: Check if night shift is completely missing (highest priority)
+                if (cleanNightShift === '' && cleanDayShift !== '') {
                     eventColor = '#26de81'; // Green - missing night shift needs attention
                 }
-                // 6 total people = fully staffed (no color/default)
+                // PRIORITY 2: 6 total people = fully staffed (no color/default)
                 else if (totalStaff === 6) {
                     eventColor = '#f8f9fa'; // Light gray/no color - fully staffed
                 }
-                // 5 people = 1 missing (green)
+                // PRIORITY 3: 5 people = 1 missing (green)
                 else if (totalStaff === 5) {
                     eventColor = '#26de81'; // Green - 1 person short
                 }
-                // 4 or less people = understaffed (red)
+                // PRIORITY 4: 4 or less people = understaffed (red)
                 else if (totalStaff <= 4 && totalStaff > 0) {
                     eventColor = '#ff6b6b'; // Red - critically understaffed
                 }
-                // No staff at all
+                // PRIORITY 5: No staff at all
                 else {
                     eventColor = '#6c757d'; // Gray - no staff assigned
                 }
