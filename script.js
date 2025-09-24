@@ -79,20 +79,32 @@ function parseScheduleData(rows) {
         
         // Only add event if there's actual schedule data
         if (title.trim()) {
-            // Determine color based on staffing level
+            // Count staff for each shift
             const dayStaffCount = dayShift ? dayShift.split('/').filter(s => s.trim()).length : 0;
             const nightStaffCount = nightShift ? nightShift.split('/').filter(s => s.trim()).length : 0;
             const totalStaff = dayStaffCount + nightStaffCount;
             
             let backgroundColor;
-            if (totalStaff >= 6) {
-                backgroundColor = '#26de81'; // Green - well staffed
-            } else if (totalStaff >= 4) {
-                backgroundColor = '#f9ca24'; // Yellow - adequately staffed
-            } else if (totalStaff >= 2) {
-                backgroundColor = '#ff6b6b'; // Red - understaffed
-            } else {
-                backgroundColor = '#6c757d'; // Gray - minimal staff
+            
+            // Check if night shift is missing (highest priority)
+            if (nightStaffCount === 0 && dayStaffCount > 0) {
+                backgroundColor = '#26de81'; // Green - missing night shift needs attention
+            }
+            // 6 total people = fully staffed (no color/default)
+            else if (totalStaff === 6) {
+                backgroundColor = '#f8f9fa'; // Light gray/no color - fully staffed
+            }
+            // 5 people = 1 missing (green)
+            else if (totalStaff === 5) {
+                backgroundColor = '#26de81'; // Green - 1 person short
+            }
+            // 4 or less people = understaffed (red)
+            else if (totalStaff <= 4 && totalStaff > 0) {
+                backgroundColor = '#ff6b6b'; // Red - critically understaffed
+            }
+            // No staff at all
+            else {
+                backgroundColor = '#6c757d'; // Gray - no staff assigned
             }
             
             events.push({
@@ -433,10 +445,26 @@ function saveEdit() {
             const nightCount = nightShift ? nightShift.split('/').filter(s => s.trim()).length : 0;
             const totalStaff = dayCount + nightCount;
             
-            if (totalStaff >= 6) eventColor = '#26de81'; // Green - well staffed
-            else if (totalStaff >= 4) eventColor = '#f9ca24'; // Yellow - adequately staffed  
-            else if (totalStaff >= 2) eventColor = '#ff6b6b'; // Red - understaffed
-            else eventColor = '#6c757d'; // Gray - no staff
+            // Check if night shift is missing (highest priority)
+            if (nightCount === 0 && dayCount > 0) {
+                eventColor = '#26de81'; // Green - missing night shift needs attention
+            }
+            // 6 total people = fully staffed (no color/default)
+            else if (totalStaff === 6) {
+                eventColor = '#f8f9fa'; // Light gray/no color - fully staffed
+            }
+            // 5 people = 1 missing (green)
+            else if (totalStaff === 5) {
+                eventColor = '#26de81'; // Green - 1 person short
+            }
+            // 4 or less people = understaffed (red)
+            else if (totalStaff <= 4 && totalStaff > 0) {
+                eventColor = '#ff6b6b'; // Red - critically understaffed
+            }
+            // No staff at all
+            else {
+                eventColor = '#6c757d'; // Gray - no staff assigned
+            }
         }
         
         // Remove existing event for this date
