@@ -62,7 +62,10 @@
         <div class="page-header">
             <button class="back-button" onclick="showPage('supervisorPage')">← Back</button>
             <h1 class="page-title">Supervisor - Edit Schedule</h1>
-            <button class="publish-button" onclick="publishSchedule()">Publish Schedule</button>
+            <div class="header-buttons">
+                <button class="restart-button" onclick="restartFromGoogleSheets()">Restart from Google Sheets</button>
+                <button class="publish-button" onclick="publishSchedule()">Publish Schedule</button>
+            </div>
         </div>
         <div class="supervisor-controls">
             <div class="edit-instructions">
