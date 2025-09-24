@@ -67,7 +67,7 @@ function parseScheduleData(rows) {
         // Format date for FullCalendar (YYYY-MM-DD)
         const formattedDate = date.toISOString().split('T')[0];
         
-        // Create event title from day and night shifts
+        // Create event title from day and night shifts (night shift below day shift)
         let title = '';
         if (dayShift.trim()) {
             title += `Day: ${dayShift.trim()}`;
@@ -84,27 +84,44 @@ function parseScheduleData(rows) {
             const nightStaffCount = nightShift ? nightShift.split('/').filter(s => s.trim()).length : 0;
             const totalStaff = dayStaffCount + nightStaffCount;
             
+            // Check if it's a weekend (Saturday = 6, Sunday = 0)
+            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+            
             let backgroundColor;
             
-            // Check if night shift is missing (highest priority)
-            if (nightStaffCount === 0 && dayStaffCount > 0) {
-                backgroundColor = '#26de81'; // Green - missing night shift needs attention
-            }
-            // 6 total people = fully staffed (no color/default)
-            else if (totalStaff === 6) {
-                backgroundColor = '#f8f9fa'; // Light gray/no color - fully staffed
-            }
-            // 5 people = 1 missing (green)
-            else if (totalStaff === 5) {
-                backgroundColor = '#26de81'; // Green - 1 person short
-            }
-            // 4 or less people = understaffed (red)
-            else if (totalStaff <= 4 && totalStaff > 0) {
-                backgroundColor = '#ff6b6b'; // Red - critically understaffed
-            }
-            // No staff at all
-            else {
-                backgroundColor = '#6c757d'; // Gray - no staff assigned
+            if (isWeekend) {
+                // Weekend rules: only need 2 people total
+                if (totalStaff === 2) {
+                    backgroundColor = '#f8f9fa'; // Light gray - fully staffed
+                } else if (totalStaff === 1) {
+                    backgroundColor = '#26de81'; // Green - 1 person short
+                } else if (totalStaff === 0) {
+                    backgroundColor = '#ff6b6b'; // Red - 2 people missing
+                } else {
+                    backgroundColor = '#f8f9fa'; // Default for overstaffed weekends
+                }
+            } else {
+                // Weekday rules: need 6 people total
+                // Check if night shift is missing (highest priority)
+                if (nightStaffCount === 0 && dayStaffCount > 0) {
+                    backgroundColor = '#26de81'; // Green - missing night shift needs attention
+                }
+                // 6 total people = fully staffed (no color/default)
+                else if (totalStaff === 6) {
+                    backgroundColor = '#f8f9fa'; // Light gray/no color - fully staffed
+                }
+                // 5 people = 1 missing (green)
+                else if (totalStaff === 5) {
+                    backgroundColor = '#26de81'; // Green - 1 person short
+                }
+                // 4 or less people = understaffed (red)
+                else if (totalStaff <= 4 && totalStaff > 0) {
+                    backgroundColor = '#ff6b6b'; // Red - critically understaffed
+                }
+                // No staff at all
+                else {
+                    backgroundColor = '#6c757d'; // Gray - no staff assigned
+                }
             }
             
             events.push({
@@ -425,12 +442,23 @@ function closeEditModal() {
 }
 
 function saveEdit() {
-    const dayShift = document.getElementById('dayShiftInput').value;
-    const nightShift = document.getElementById('nightShiftInput').value;
-    const backgroundColor = document.querySelector('input[name="backgroundColor"]:checked').value;
+    const dayShiftInput = document.getElementById('dayShiftInput');
+    const nightShiftInput = document.getElementById('nightShiftInput');
+    const backgroundColorRadio = document.querySelector('input[name="backgroundColor"]:checked');
+    
+    // Check if all required elements exist
+    if (!dayShiftInput || !nightShiftInput || !backgroundColorRadio) {
+        console.error('Required form elements not found');
+        alert('Error: Form elements not found. Please try again.');
+        return;
+    }
+    
+    const dayShift = dayShiftInput.value;
+    const nightShift = nightShiftInput.value;
+    const backgroundColor = backgroundColorRadio.value;
     
     if (currentEditingDate && supervisorEditCalendar) {
-        // Create event title
+        // Create event title (night shift below day shift)
         let title = '';
         if (dayShift) title += `Day: ${dayShift}`;
         if (nightShift) {
@@ -445,25 +473,43 @@ function saveEdit() {
             const nightCount = nightShift ? nightShift.split('/').filter(s => s.trim()).length : 0;
             const totalStaff = dayCount + nightCount;
             
-            // Check if night shift is missing (highest priority)
-            if (nightCount === 0 && dayCount > 0) {
-                eventColor = '#26de81'; // Green - missing night shift needs attention
-            }
-            // 6 total people = fully staffed (no color/default)
-            else if (totalStaff === 6) {
-                eventColor = '#f8f9fa'; // Light gray/no color - fully staffed
-            }
-            // 5 people = 1 missing (green)
-            else if (totalStaff === 5) {
-                eventColor = '#26de81'; // Green - 1 person short
-            }
-            // 4 or less people = understaffed (red)
-            else if (totalStaff <= 4 && totalStaff > 0) {
-                eventColor = '#ff6b6b'; // Red - critically understaffed
-            }
-            // No staff at all
-            else {
-                eventColor = '#6c757d'; // Gray - no staff assigned
+            // Check if it's a weekend
+            const eventDate = new Date(currentEditingDate);
+            const isWeekend = eventDate.getDay() === 0 || eventDate.getDay() === 6;
+            
+            if (isWeekend) {
+                // Weekend rules: only need 2 people total
+                if (totalStaff === 2) {
+                    eventColor = '#f8f9fa'; // Light gray - fully staffed
+                } else if (totalStaff === 1) {
+                    eventColor = '#26de81'; // Green - 1 person short
+                } else if (totalStaff === 0) {
+                    eventColor = '#ff6b6b'; // Red - 2 people missing
+                } else {
+                    eventColor = '#f8f9fa'; // Default for overstaffed weekends
+                }
+            } else {
+                // Weekday rules: need 6 people total
+                // Check if night shift is missing (highest priority)
+                if (nightCount === 0 && dayCount > 0) {
+                    eventColor = '#26de81'; // Green - missing night shift needs attention
+                }
+                // 6 total people = fully staffed (no color/default)
+                else if (totalStaff === 6) {
+                    eventColor = '#f8f9fa'; // Light gray/no color - fully staffed
+                }
+                // 5 people = 1 missing (green)
+                else if (totalStaff === 5) {
+                    eventColor = '#26de81'; // Green - 1 person short
+                }
+                // 4 or less people = understaffed (red)
+                else if (totalStaff <= 4 && totalStaff > 0) {
+                    eventColor = '#ff6b6b'; // Red - critically understaffed
+                }
+                // No staff at all
+                else {
+                    eventColor = '#6c757d'; // Gray - no staff assigned
+                }
             }
         }
         
