@@ -13,17 +13,27 @@ const SUPERVISOR_PASSWORD = "admin123"; // Change this to your desired password
 async function fetchScheduleFromGoogleSheets() {
     try {
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+        console.log('Fetching from Google Sheets...', url);
+        
         const response = await fetch(url);
         
+        console.log('Response status:', response.status);
+        console.log('Response OK:', response.ok);
+        
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
         
         const data = await response.json();
+        console.log('Successfully fetched data, rows:', data.values ? data.values.length : 0);
         return parseScheduleData(data.values || []);
     } catch (error) {
-        console.error('Error fetching schedule data:', error);
-        alert('Error loading schedule from Google Sheets. Using local data instead.');
+        console.error('Detailed error fetching schedule data:', error);
+        console.error('Error type:', error.name);
+        console.error('Error message:', error.message);
+        alert('Error loading schedule from Google Sheets: ' + error.message + '\n\nUsing local data instead. Check console for details.');
         return [];
     }
 }
