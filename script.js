@@ -153,10 +153,10 @@ function parseScheduleData(rows) {
                 textColor: getTextColor(backgroundColor),
                 allDay: true,
                 extendedProps: {
-                    dayShift: dayShift.trim(),
-                    nightShift: nightShift.trim(), // Keep original for display
-                    cleanDayShift: cleanDayShift, // Store cleaned versions for logic
-                    cleanNightShift: cleanNightShift,
+                    dayShift: displayDayShift.trim(), // Display version with "_"
+                    nightShift: displayNightShift.trim(), // Display version with "_"
+                    cleanDayShift: cleanDayShift, // Clean version for calculations
+                    cleanNightShift: cleanNightShift, // Clean version for calculations
                     source: 'googleSheets'
                 }
             });
@@ -481,16 +481,15 @@ function saveEdit() {
     const backgroundColor = backgroundColorRadio.value;
     
     if (currentEditingDate && supervisorEditCalendar) {
-        // Create event title (night shift below day shift) - filter out "Blank" tokens
+        // Create event title using display versions (with "_" for blank spots)
         let title = '';
-        const displayDayShift = cleanDayShift || '';
-        const displayNightShift = cleanNightShift || '';
-        
-        if (displayDayShift) title += `Day: ${displayDayShift}`;
-        if (displayNightShift) {
+        if (displayDayShift.trim()) {
+            title += `Day: ${displayDayShift.trim()}`;
+        }
+        if (displayNightShift.trim()) {
             if (title) title += '\nNight: ';
             else title += 'Night: ';
-            title += displayNightShift;
+            title += displayNightShift.trim();
         }
         
         // Determine background color
