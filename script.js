@@ -1,7 +1,7 @@
 // Google Sheets API Configuration
 const API_KEY = 'AIzaSyCyCEmSvunsn8C82AwhSyX5joXy2hstPls';
 const SHEET_ID = '1pKNJK3nvpcwQor1obQm1V6qiWfwOPmImV361Qfqul8E';
-const RANGE = 'Sheet2!A13:R100'; // Changed from Sheet1 to Sheet2
+const RANGE = 'Sheet1!A13:X100';  // Includes columns through X to get helper data// Changed from Sheet1 to Sheet2
 
 // Global variables
 let calendar, supervisorViewCalendar, supervisorEditCalendar, previousCalendar;
@@ -48,8 +48,10 @@ function parseScheduleData(rows) {
         // Column R (index 17) = Night shift
         
         const dateValue = row[0];
-        const dayShift = row[16] || '';
-        const nightShift = row[17] || '';
+        const dayShift = row[16] || '';      // Column Q
+        const nightShift = row[17] || '';     // Column R
+        const school1 = row[19] || '';        // Column T (helper col B)
+        const school2 = row[20] || '';        // Column U (helper col C)
         const displayDayShift = dayShift.replace(/blank/gi, '_');
         const displayNightShift = nightShift.replace(/blank/gi, '_');
         if (!dateValue) return; // Skip rows without dates
@@ -118,6 +120,12 @@ if (isWeekend) {
         else title += 'Night: ';
         title += displayNightShift.trim();
     }
+    // Add school assignments
+    const schoolPeople = [school1, school2].filter(s => s.trim()).join(', ');
+    if (schoolPeople) {
+        if (title) title += '\n';
+        title += `School: ${schoolPeople}`;
+}
 }
         // Only add event if there's actual schedule data
         if (title.trim()) {
