@@ -50,7 +50,8 @@ function parseScheduleData(rows) {
         const dateValue = row[0];
         const dayShift = row[16] || '';
         const nightShift = row[17] || '';
-        
+        const displayDayShift = dayShift.replace(/blank/gi, '_');
+        const displayNightShift = nightShift.replace(/blank/gi, '_');
         if (!dateValue) return; // Skip rows without dates
         
         // Clean up night shift - remove spaces, NBSP, "Blank" tokens, and empty entries
