@@ -95,20 +95,30 @@ function parseScheduleData(rows) {
         // Skip invalid dates
         if (isNaN(date.getTime())) return;
         
-        // Format date for FullCalendar (YYYY-MM-DD)
-        const formattedDate = date.toISOString().split('T')[0];
-        
-        // Create event title from day and night shifts (night shift below day shift)
-        // Create event title using display versions (with "_" for blank spots)
-        let title = '';
-        if (displayDayShift.trim()) {
-            title += `Day: ${displayDayShift.trim()}`;
-        }
-        if (displayNightShift.trim()) {
-        if (title) title += '\n';
-        title += `Night: ${displayNightShift.trim()}`;
-        }
-        
+// Format date for FullCalendar (YYYY-MM-DD)
+const formattedDate = date.toISOString().split('T')[0];
+
+// Check if it's a weekend
+const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+
+// Create event title
+let title = '';
+if (isWeekend) {
+    // Weekend: just show the two people without labels
+    if (displayDayShift.trim()) {
+        title = displayDayShift.trim();
+    }
+} else {
+    // Weekday: show with "Day:" and "Night:" labels
+    if (displayDayShift.trim()) {
+        title += `Day: ${displayDayShift.trim()}`;
+    }
+    if (displayNightShift.trim()) {
+        if (title) title += '\nNight: ';
+        else title += 'Night: ';
+        title += displayNightShift.trim();
+    }
+}
         // Only add event if there's actual schedule data
         if (title.trim()) {
             // Count staff for each shift - use cleaned values
