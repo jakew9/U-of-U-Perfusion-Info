@@ -102,30 +102,27 @@ function parseScheduleData(rows) {
         }
         
         // Parse date - handle different date formats
-        let date;
-        if (dateValue instanceof Date) {
-            date = dateValue;
-        } else if (typeof dateValue === 'string') {
-            // Try parsing different date formats
-            date = new Date(dateValue);
-            if (isNaN(date.getTime())) {
-                // Try parsing as MM/DD/YYYY format
-                const parts = dateValue.split('/');
-                if (parts.length === 3) {
-                    date = new Date(parts[2], parts[0] - 1, parts[1]);
-                }
-            }
-        } else {
-            return; // Skip invalid dates
+let date;
+if (dateValue instanceof Date) {
+    date = dateValue;
+} else if (typeof dateValue === 'string') {
+    date = new Date(dateValue);
+    if (isNaN(date.getTime())) {
+        const parts = dateValue.split('/');
+        if (parts.length === 3) {
+            date = new Date(parts[2], parts[0] - 1, parts[1]);
         }
-        
-        // Skip invalid dates
-        if (isNaN(date.getTime())) return;
-        
+    }
+} else {
+    return;
+}
+
+if (isNaN(date.getTime())) return;
+
 // Format date for FullCalendar (YYYY-MM-DD)
 const formattedDate = date.toISOString().split('T')[0];
 
-// Check if it's a weekend
+// Check if it's a weekend - DECLARE ONLY ONCE HERE
 const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
 // Create event title
@@ -158,9 +155,6 @@ if (isWeekend) {
             const dayStaffCount = cleanDayShift ? cleanDayShift.split('/').filter(s => s.trim()).length : 0;
             const nightStaffCount = cleanNightShift ? cleanNightShift.split('/').filter(s => s.trim()).length : 0;
             const totalStaff = dayStaffCount + nightStaffCount;
-            
-            // Check if it's a weekend (Saturday = 6, Sunday = 0)
-            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
             
             let backgroundColor;
             
