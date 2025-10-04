@@ -491,20 +491,20 @@ function saveEdit() {
     const backgroundColor = backgroundColorRadio.value;
     
     if (currentEditingDate && supervisorEditCalendar) {
-// Create display versions with "_" for blank spots
-const displayDayShift = dayShift.replace(/blank/gi, '_');
-const displayNightShift = nightShift.replace(/blank/gi, '_');
+        // Create display versions with "_" for blank spots
+        const displayDayShift = dayShift.replace(/blank/gi, '_');
+        const displayNightShift = nightShift.replace(/blank/gi, '_');
 
-// Create event title using display versions
-let title = '';
-if (displayDayShift.trim()) {
-    title += `Day: ${displayDayShift.trim()}`;
-}
-if (displayNightShift.trim()) {
-    if (title) title += '\nNight: ';
-    else title += 'Night: ';
-    title += displayNightShift.trim();
-}
+        // Create event title using display versions
+        let title = '';
+        if (displayDayShift.trim()) {
+            title += `Day: ${displayDayShift.trim()}`;
+        }
+        if (displayNightShift.trim()) {
+            if (title) title += '\nNight: ';
+            else title += 'Night: ';
+            title += displayNightShift.trim();
+        }
         
         // Determine background color
         let eventColor = backgroundColor;
