@@ -132,31 +132,37 @@ function parseScheduleData(rows) {
                 } else {
                     backgroundColor = '#f8f9fa'; // Default for overstaffed weekends
                 }
-            } else {
-                // Weekday rules: need 6 people total
-                // PRIORITY 1: Check if night shift is completely missing (highest priority)
-                if (cleanNightShift === '' && cleanDayShift !== '') {
-                    backgroundColor = '#26de81'; // Green - missing night shift needs attention
-                    console.log(`Missing night shift detected for ${formattedDate}: dayStaff=${dayStaffCount}, nightStaff=${nightStaffCount}`);
-                }
-                // PRIORITY 2: 6 total people = fully staffed (no color/default)
-                else if (totalStaff === 6) {
-                    backgroundColor = '#f8f9fa'; // Light gray/no color - fully staffed
-                }
-                // PRIORITY 3: 5 people = 1 missing (green)
-                else if (totalStaff === 5) {
-                    backgroundColor = '#26de81'; // Green - 1 person short
-                }
-                // PRIORITY 4: 4 or less people = understaffed (red)
-                else if (totalStaff <= 4 && totalStaff > 0) {
-                    backgroundColor = '#ff6b6b'; // Red - critically understaffed
-                }
-                // PRIORITY 5: No staff at all
-                else {
-                    backgroundColor = '#6c757d'; // Gray - no staff assigned
-                }
-            }
-            
+} else {
+    // Weekday rules: need 6 people total
+    
+    // Count "Blank" occurrences in night shift (case insensitive)
+    const nightShiftBlankCount = (nightShift.match(/blank/gi) || []).length;
+    
+    // PRIORITY 1: Night shift completely missing (2 blanks or empty)
+    if ((nightShiftBlankCount === 2 || cleanNightShift === '') && cleanDayShift !== '') {
+        backgroundColor = '#ff6b6b'; // Red - no night shift coverage
+    }
+    // PRIORITY 2: Night shift partially missing (1 blank)
+    else if (nightShiftBlankCount === 1 && cleanDayShift !== '') {
+        backgroundColor = '#26de81'; // Green - 1 night position missing
+    }
+    // PRIORITY 3: 6 total people = fully staffed
+    else if (totalStaff === 6) {
+        backgroundColor = '#f8f9fa'; // Light gray - fully staffed
+    }
+    // PRIORITY 4: 5 people = 1 missing (green)
+    else if (totalStaff === 5) {
+        backgroundColor = '#26de81'; // Green - 1 person short
+    }
+    // PRIORITY 5: 4 or less people = understaffed (red)
+    else if (totalStaff <= 4 && totalStaff > 0) {
+        backgroundColor = '#ff6b6b'; // Red - critically understaffed
+    }
+    // PRIORITY 6: No staff at all
+    else {
+        backgroundColor = '#6c757d'; // Gray - no staff assigned
+    }
+}
             events.push({
                 title: title,
                 start: formattedDate,
