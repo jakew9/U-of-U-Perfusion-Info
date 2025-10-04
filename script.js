@@ -50,12 +50,37 @@ function parseScheduleData(rows) {
         const dateValue = row[0];
         const dayShift = row[16] || '';      // Column Q
         const nightShift = row[17] || '';     // Column R
-        const school1 = row[19] || '';        // Column T (helper col B)
-        const school2 = row[20] || '';        // Column U (helper col C)
+        const school = row[18] || '';        // Column T (helper col B)
         const displayDayShift = dayShift.replace(/blank/gi, '_');
         const displayNightShift = nightShift.replace(/blank/gi, '_');
         if (!dateValue) return; // Skip rows without dates
-        
+        // Check if it's a weekend
+        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+
+        // Create event title
+        let title = '';
+        if (isWeekend) {
+            // Weekend: just show the two people without labels
+            if (displayDayShift.trim()) {
+                title = displayDayShift.trim();
+            }
+        } else {
+            // Weekday: show with "Day:" and "Night:" labels
+            if (displayDayShift.trim()) {
+                title += `Day: ${displayDayShift.trim()}`;
+            }
+            if (displayNightShift.trim()) {
+                if (title) title += '\nNight: ';
+                else title += 'Night: ';
+                title += displayNightShift.trim();
+            }
+            
+            // Add school assignments for weekdays
+            if (school.trim()) {
+                if (title) title += '\n';
+                title += `School: ${school.trim()}`;
+            }
+        }
         // Clean up night shift - remove spaces, NBSP, "Blank" tokens, and empty entries
         const cleanNightShift = nightShift
           .replace(/blank/gi, '') // Remove "Blank" (case insensitive)
@@ -626,6 +651,19 @@ async function initializeSupervisorViewCalendar() {
         events: events,
         height: 'auto',
         eventDisplay: 'block',
+        eventContent: function(arg) {
+        const lines = arg.event.title.split('\n');
+        let html = '<div class="fc-event-main-frame"><div class="fc-event-title-container"><div class="fc-event-title fc-sticky">';
+        lines.forEach(line => {
+            if (line.startsWith('School:')) {
+                html += `<div style="background-color: #ffeb3b; color: #000; padding: 2px 4px; margin-top: 2px;">${line}</div>`;
+            } else {
+                html += `<div>${line}</div>`;
+            }
+        });
+        html += '</div></div></div>';
+        return { html: html };
+    },
         eventClick: function(info) {
             // Show detailed information when clicking on an event
             const event = info.event;
@@ -671,6 +709,19 @@ async function initializeSupervisorEditCalendar() {
         events: events,
         height: 'auto',
         eventDisplay: 'block',
+        eventContent: function(arg) {
+        const lines = arg.event.title.split('\n');
+        let html = '<div class="fc-event-main-frame"><div class="fc-event-title-container"><div class="fc-event-title fc-sticky">';
+        lines.forEach(line => {
+            if (line.startsWith('School:')) {
+                html += `<div style="background-color: #ffeb3b; color: #000; padding: 2px 4px; margin-top: 2px;">${line}</div>`;
+            } else {
+                html += `<div>${line}</div>`;
+            }
+        });
+        html += '</div></div></div>';
+        return { html: html };
+    },
         dateClick: function(info) {
             const existingEvent = supervisorEditCalendar.getEvents().find(event => 
                 event.startStr === info.dateStr
@@ -714,6 +765,19 @@ async function initializePublishedCalendar() {
         events: events,
         height: 'auto',
         eventDisplay: 'block',
+        eventContent: function(arg) {
+        const lines = arg.event.title.split('\n');
+        let html = '<div class="fc-event-main-frame"><div class="fc-event-title-container"><div class="fc-event-title fc-sticky">';
+        lines.forEach(line => {
+            if (line.startsWith('School:')) {
+                html += `<div style="background-color: #ffeb3b; color: #000; padding: 2px 4px; margin-top: 2px;">${line}</div>`;
+            } else {
+                html += `<div>${line}</div>`;
+            }
+        });
+        html += '</div></div></div>';
+        return { html: html };
+    },
         eventClick: function(info) {
             // Show detailed information when clicking on an event
             const event = info.event;
