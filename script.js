@@ -99,13 +99,14 @@ function parseScheduleData(rows) {
         const formattedDate = date.toISOString().split('T')[0];
         
         // Create event title from day and night shifts (night shift below day shift)
+        // Create event title using display versions (with "_" for blank spots)
         let title = '';
-        if (dayShift.trim()) {
-            title += `Day: ${dayShift.trim()}`;
+        if (displayDayShift.trim()) {
+            title += `Day: ${displayDayShift.trim()}`;
         }
-        if (nightShift.trim()) {
-            if (title) title += '\n';
-            title += `Night: ${nightShift.trim()}`;
+        if (displayNightShift.trim()) {
+        if (title) title += '\n';
+        title += `Night: ${displayNightShift.trim()}`;
         }
         
         // Only add event if there's actual schedule data
