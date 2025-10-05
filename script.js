@@ -67,6 +67,7 @@ function parseScheduleData(rows) {
         const dayShift = row[16] || '';
         const nightShift = row[17] || '';
         const school = row[18] || '';
+        const off = row[19] || ''; // Column T - people who are off
         const displayDayShift = dayShift.replace(/blank/gi, '_');
         const displayNightShift = nightShift.replace(/blank/gi, '_');
         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -105,6 +106,10 @@ function parseScheduleData(rows) {
             if (school.trim()) {
                 if (title) title += '\n';
                 title += `School: ${school.trim()}`;
+            }
+            if (off.trim()) {
+                if (title) title += '\n';
+                title += `Off: ${off.trim()}`;
             }
         }
 
@@ -562,6 +567,8 @@ async function initializeSupervisorViewCalendar() {
             lines.forEach(line => {
                 if (line.startsWith('School:')) {
                     html += `<div style="background-color: #ffeb3b; color: #000; padding: 2px 4px; margin-top: 2px;">${line}</div>`;
+                } else if (line.startsWith('Off:')) {
+                    html += `<div style="background-color: #9e9e9e; color: #fff; padding: 2px 4px; margin-top: 2px;">${line}</div>`;
                 } else {
                     html += `<div>${line}</div>`;
                 }
