@@ -47,14 +47,32 @@ function parseScheduleData(rows) {
         // Column Q (index 16) = Day shift 
         // Column R (index 17) = Night shift
         
-        const dateValue = row[0];
+const dateValue = row[0];
+if (!dateValue) return; // Skip rows without dates
+
+// Parse date FIRST - move this BEFORE line 58
+let date;
+if (dateValue instanceof Date) {
+    date = dateValue;
+} else if (typeof dateValue === 'string') {
+    date = new Date(dateValue);
+    if (isNaN(date.getTime())) {
+        const parts = dateValue.split('/');
+        if (parts.length === 3) {
+            date = new Date(parts[2], parts[0] - 1, parts[1]);
+        }
+    }
+} else {
+    return;
+}
+
+if (isNaN(date.getTime())) return;
+
         const dayShift = row[16] || '';      // Column Q
         const nightShift = row[17] || '';     // Column R
         const school = row[18] || '';        // Column T (helper col B)
         const displayDayShift = dayShift.replace(/blank/gi, '_');
         const displayNightShift = nightShift.replace(/blank/gi, '_');
-        if (!dateValue) return; // Skip rows without dates
-        // Check if it's a weekend
         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
         // Create event title
