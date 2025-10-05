@@ -123,7 +123,7 @@ if (isNaN(date.getTime())) return;
 const formattedDate = date.toISOString().split('T')[0];
 
 // Create event title
-let title = '';
+title = '';
 if (isWeekend) {
     // Weekend: just show the two people without labels
     if (displayDayShift.trim()) {
