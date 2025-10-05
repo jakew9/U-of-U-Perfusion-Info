@@ -156,13 +156,6 @@ if (isWeekend) {
         else title += 'Night: ';
         title += displayNightShift.trim();
     }
-    // Add school assignments
-    const schoolPeople = [school1, school2].filter(s => s.trim()).join(', ');
-    if (schoolPeople) {
-        if (title) title += '\n';
-        title += `School: ${schoolPeople}`;
-}
-}
         // Only add event if there's actual schedule data
         if (title.trim()) {
             // Count staff for each shift - use cleaned values
