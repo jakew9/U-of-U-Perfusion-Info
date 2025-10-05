@@ -1,4 +1,4 @@
-// Configuration and constants
+// API Configuration
 export const API_KEY = 'AIzaSyCyCEmSvunsn8C82AwhSyX5joXy2hstPls';
 export const SHEET_ID = '1pKNJK3nvpcwQor1obQm1V6qiWfwOPmImV361Qfqul8E';
 export const RANGE = 'Sheet2!A13:X100';

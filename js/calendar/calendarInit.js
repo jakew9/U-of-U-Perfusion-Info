@@ -1,75 +1,71 @@
 import { getTextColor, calculateEventColor } from '../utils/colorUtils.js';
-import { calendar, supervisorViewCalendar, supervisorEditCalendar, previousCalendar } from '../config.js';
+import { SUPERVISOR_PASSWORD } from '../config.js';
+import { loadPublishedEvents, loadEventsForEditing } from '../storage/localStorageManager.js';
+import { updateScheduleInfo } from '../components/versionManager.js';
+import { calendarState } from '../state/calendarState.js';
 
-export function initializeSupervisorViewCalendar(events) {
-    const calendarEl = document.getElementById('supervisorViewCalendar');
-    supervisorViewCalendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        headerToolbar: getDefaultHeaderToolbar(),
-        events: events,
-        height: 'auto',
-        eventDisplay: 'block',
-        eventContent: formatEventContent,
-        eventClick: handleViewEventClick
-    });
-    
-    supervisorViewCalendar.render();
-}
-
-export function initializeSupervisorEditCalendar(events) {
-    const calendarEl = document.getElementById('supervisorEditCalendar');
-    supervisorEditCalendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        headerToolbar: getDefaultHeaderToolbar(),
-        events: events,
-        height: 'auto',
-        eventDisplay: 'block',
-        eventContent: formatEventContent,
-        dateClick: handleEditDateClick,
-        eventClick: handleEditEventClick
-    });
-    
-    supervisorEditCalendar.render();
-}
-
-export function initializePublishedCalendar(events) {
-    if (calendar) {
-        calendar.destroy();
+export async function initializeSupervisorViewCalendar() {
+    if (calendarState.supervisorViewCalendar) {
+        calendarState.supervisorViewCalendar.destroy();
     }
-    
-    const calendarEl = document.getElementById('publishedCalendar');
-    calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        headerToolbar: getDefaultHeaderToolbar(),
-        events: events,
-        height: 'auto',
-        eventDisplay: 'block',
-        eventContent: formatEventContent,
-        eventClick: handleViewEventClick
-    });
-    
+    const events = await loadPublishedEvents();
+    const calendar = createCalendar('supervisorViewCalendar', events, true);
+    calendarState.setSupervisorViewCalendar(calendar);
+    calendar.render();
+}
+
+export async function initializeSupervisorEditCalendar() {
+    if (calendarState.supervisorEditCalendar) {
+        calendarState.supervisorEditCalendar.destroy();
+    }
+    const events = await loadEventsForEditing();
+    const calendar = createCalendar('supervisorEditCalendar', events, false, true);
+    calendarState.setSupervisorEditCalendar(calendar);
+    calendar.render();
+}
+
+export async function initializePublishedCalendar() {
+    if (calendarState.calendar) {
+        calendarState.calendar.destroy();
+    }
+    const events = await loadPublishedEvents();
+    const calendar = createCalendar('publishedCalendar', events, true);
+    calendarState.setCalendar(calendar);
     calendar.render();
     updateScheduleInfo(events);
 }
 
 export function initializePreviousCalendar() {
-    const calendarEl = document.getElementById('previousCalendar');
-    previousCalendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        headerToolbar: getDefaultHeaderToolbar(),
-        events: [],
-        height: 'auto',
-        eventDisplay: 'block'
-    });
-    previousCalendar.render();
+    if (calendarState.previousCalendar) {
+        calendarState.previousCalendar.destroy();
+    }
+    const calendar = createCalendar('previousCalendar', [], true);
+    calendarState.setPreviousCalendar(calendar);
+    calendar.render();
 }
 
-function getDefaultHeaderToolbar() {
-    return {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+function createCalendar(elementId, events, readOnly = false, isEditable = false) {
+    const config = {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: events,
+        height: 'auto',
+        eventDisplay: 'block',
+        eventContent: formatEventContent
     };
+
+    if (!readOnly) {
+        config.dateClick = handleDateClick;
+        config.eventClick = handleEventClick;
+    } else if (!isEditable) {
+        config.eventClick = handleViewEventClick;
+    }
+
+    return new FullCalendar.Calendar(document.getElementById(elementId), config);
 }
 
 function formatEventContent(arg) {
@@ -112,4 +108,25 @@ function handleViewEventClick(info) {
     }
     
     alert(message);
+}
+
+function handleDateClick(info) {
+    const existingEvent = this.getEvents().find(event => 
+        event.startStr === info.dateStr
+    );
+    
+    if (existingEvent) {
+        const dayShift = existingEvent.extendedProps.dayShift || '';
+        const nightShift = existingEvent.extendedProps.nightShift || '';
+        window.openEditModal(info.dateStr, dayShift, nightShift, existingEvent.backgroundColor);
+    } else {
+        window.openEditModal(info.dateStr);
+    }
+}
+
+function handleEventClick(info) {
+    const event = info.event;
+    const dayShift = event.extendedProps.dayShift || '';
+    const nightShift = event.extendedProps.nightShift || '';
+    window.openEditModal(info.event.startStr, dayShift, nightShift, event.backgroundColor);
 }

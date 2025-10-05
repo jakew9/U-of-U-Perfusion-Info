@@ -1,7 +1,13 @@
 import { SUPERVISOR_PASSWORD } from '../config.js';
+import { showPage } from './navigation.js';
+import { getTextColor, calculateEventColor } from '../utils/colorUtils.js';
+import { calendarState } from '../state/calendarState.js';
+
+let currentAccessType = null;
 
 // Password Modal Functions
-export function showPasswordModal() {
+export function showPasswordModal(accessType = 'view') {
+    currentAccessType = accessType;
     document.getElementById('passwordModal').style.display = 'block';
     document.getElementById('passwordInput').focus();
 }
@@ -10,6 +16,7 @@ export function closePasswordModal() {
     document.getElementById('passwordModal').style.display = 'none';
     document.getElementById('passwordInput').value = '';
     document.getElementById('passwordError').style.display = 'none';
+    currentAccessType = null;
 }
 
 export function checkPassword() {
@@ -18,6 +25,7 @@ export function checkPassword() {
     
     if (enteredPassword === SUPERVISOR_PASSWORD) {
         closePasswordModal();
+        sessionStorage.setItem('isAuthenticated', 'true');
         showPage('supervisorPage');
     } else {
         errorDiv.textContent = 'Incorrect password. Please try again.';
@@ -29,7 +37,7 @@ export function checkPassword() {
 
 // Edit Modal Functions
 export function openEditModal(date, dayShift = '', nightShift = '', backgroundColor = 'auto') {
-    currentEditingDate = date;
+    calendarState.setCurrentEditingDate(date);
     document.getElementById('editModalTitle').textContent = `Edit Schedule for ${date}`;
     document.getElementById('dayShiftInput').value = dayShift;
     document.getElementById('nightShiftInput').value = nightShift;
@@ -46,6 +54,55 @@ export function openEditModal(date, dayShift = '', nightShift = '', backgroundCo
 export function closeEditModal() {
     document.getElementById('editModal').style.display = 'none';
     currentEditingDate = null;
+}
+
+export function saveEdit() {
+    const dayShift = document.getElementById('dayShiftInput').value.trim();
+    const nightShift = document.getElementById('nightShiftInput').value.trim();
+    const selectedColor = document.querySelector('input[name="backgroundColor"]:checked').value;
+    
+    if (!currentEditingDate) {
+        alert('Error: No date selected for editing');
+        return;
+    }
+
+    // Find existing event or create new one
+    let existingEvent = supervisorEditCalendar.getEvents().find(event => 
+        event.startStr === currentEditingDate
+    );
+
+    const eventTitle = formatEventTitle(dayShift, nightShift);
+    const backgroundColor = selectedColor === 'auto' ? calculateEventColor(dayShift, nightShift) : selectedColor;
+    const textColor = getTextColor(backgroundColor);
+
+    if (existingEvent) {
+        existingEvent.setProp('title', eventTitle);
+        existingEvent.setProp('backgroundColor', backgroundColor);
+        existingEvent.setProp('textColor', textColor);
+        existingEvent.setExtendedProp('dayShift', dayShift);
+        existingEvent.setExtendedProp('nightShift', nightShift);
+    } else {
+        supervisorEditCalendar.addEvent({
+            title: eventTitle,
+            start: currentEditingDate,
+            allDay: true,
+            backgroundColor: backgroundColor,
+            textColor: textColor,
+            extendedProps: {
+                dayShift: dayShift,
+                nightShift: nightShift
+            }
+        });
+    }
+
+    closeEditModal();
+}
+
+function formatEventTitle(dayShift, nightShift) {
+    let title = '';
+    if (dayShift) title += `Day Shift:\n${dayShift}\n`;
+    if (nightShift) title += `Night Shift:\n${nightShift}`;
+    return title.trim();
 }
 
 // Close modals when clicking outside

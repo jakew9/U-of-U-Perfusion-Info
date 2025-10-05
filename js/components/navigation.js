@@ -1,3 +1,12 @@
+import { 
+    initializeSupervisorViewCalendar,
+    initializeSupervisorEditCalendar,
+    initializePublishedCalendar,
+    initializePreviousCalendar
+} from '../calendar/calendarInit.js';
+import { displayPublishedVersions } from './versionManager.js';
+import { showPasswordModal } from './modals.js';
+
 // Page navigation functions
 export function showPage(pageId) {
     const pages = document.querySelectorAll('.page');
@@ -5,47 +14,60 @@ export function showPage(pageId) {
     
     document.getElementById(pageId).classList.add('active');
     
-    initializePageContent(pageId);
-}
-
-function initializePageContent(pageId) {
+    // Initialize specific page content
     switch(pageId) {
         case 'supervisorPage':
             // Supervisor page initialization
             break;
         case 'supervisorViewPage':
-            if (!supervisorViewCalendar) {
-                initializeSupervisorViewCalendar();
-            }
+            initializeSupervisorViewCalendar();
             break;
         case 'supervisorEditPage':
-            if (!supervisorEditCalendar) {
-                initializeSupervisorEditCalendar();
-            }
+            initializeSupervisorEditCalendar();
             break;
         case 'publishedSchedulePage':
             initializePublishedCalendar();
             break;
         case 'previousSchedulePage':
-            if (!previousCalendar) {
-                initializePreviousCalendar();
-            }
+            initializePreviousCalendar();
             break;
         case 'managePublishedPage':
-            initializeManagePublished();
+            displayPublishedVersions();
             break;
     }
 }
 
 export function showSupervisorPage() {
-    showPasswordModal();
+    if (sessionStorage.getItem('isAuthenticated')) {
+        showPage('supervisorPage');
+    } else {
+        showPasswordModal('supervisor');
+    }
 }
 
 export function showManagePublished() {
-    showPage('managePublishedPage');
+    if (sessionStorage.getItem('isAuthenticated')) {
+        showPage('managePublishedPage');
+    } else {
+        showPasswordModal('manage');
+    }
 }
 
-// Initialize app when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    showPage('welcomePage');
-});
+export function requestEditAccess() {
+    if (sessionStorage.getItem('isAuthenticated')) {
+        showPage('supervisorEditPage');
+    } else {
+        showPasswordModal('edit');
+    }
+}
+
+// Expose navigation functions to window
+window.showSupervisorPage = showSupervisorPage;
+
+export function requestManageAccess() {
+    if (sessionStorage.getItem('isAuthenticated')) {
+        showPage('managePublishedPage');
+    } else {
+        showPasswordModal('manage');
+    }
+}

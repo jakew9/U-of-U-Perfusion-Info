@@ -1,4 +1,15 @@
 import { getVersionHistory } from '../storage/localStorageManager.js';
+import { calendar } from '../config.js';
+import { showPage } from './navigation.js';
+
+export function updateScheduleInfo(events) {
+    const totalEvents = events.length;
+    const lastUpdateDate = new Date().toLocaleDateString();
+    document.getElementById('scheduleStats').innerHTML = `
+        <p>Total Assignments: ${totalEvents}</p>
+        <p>Last Updated: ${lastUpdateDate}</p>
+    `;
+}
 
 export function displayPublishedVersions() {
     const versionsList = document.getElementById('publishedVersionsList');
@@ -131,5 +142,24 @@ function updateVersionListUI(historyLength, currentPublished, clearAllBtn) {
         clearAllBtn.style.display = 'block';
     } else {
         clearAllBtn.style.display = 'none';
+    }
+}
+
+export function confirmDeleteVersion(versionNum) {
+    if (confirm(`Are you sure you want to delete Version ${versionNum}? This action cannot be undone.`)) {
+        deleteVersion(versionNum);
+    }
+}
+
+export function clearAllVersions() {
+    if (confirm('Are you sure you want to clear all archived versions? This action cannot be undone.')) {
+        try {
+            localStorage.setItem('perfusionScheduleHistory', JSON.stringify([]));
+            displayPublishedVersions();
+            alert('All archived versions have been cleared successfully.');
+        } catch (error) {
+            console.error('Error clearing versions:', error);
+            alert('Error clearing versions. Please try again.');
+        }
     }
 }

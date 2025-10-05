@@ -8,38 +8,70 @@ export async function fetchScheduleFromGoogleSheets() {
         
         const response = await fetch(url);
         
-        console.log('Response status:', response.status);
-        console.log('Response OK:', response.ok);
-        
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Error response:', errorText);
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
         console.log('Successfully fetched data, rows:', data.values ? data.values.length : 0);
         return parseScheduleData(data.values || []);
     } catch (error) {
-        console.error('Detailed error fetching schedule data:', error);
-        console.error('Error type:', error.name);
-        console.error('Error message:', error.message);
-        alert('Error loading schedule from Google Sheets: ' + error.message + '\n\nUsing local data instead. Check console for details.');
-        return [];
+        console.error('Error fetching schedule data:', error);
+        throw error;
     }
 }
 
+function parseDateValue(dateValue) {
+    try {
+        const date = new Date(dateValue);
+        if (!isNaN(date.getTime())) {
+            return date.toISOString().split('T')[0];
+        }
+    } catch (error) {
+        console.error('Error parsing date:', dateValue, error);
+    }
+    return null;
+}
+
+function createEventFromData(date, dayShift, nightShift, school, off) {
+    let title = '';
+    if (dayShift) title += `Day Shift:\n${dayShift}\n`;
+    if (nightShift) title += `Night Shift:\n${nightShift}\n`;
+    if (school) title += `School:\n${school}\n`;
+    if (off) title += `Off:\n${off}`;
+    
+    if (!title) return null;
+    
+    return {
+        title: title.trim(),
+        start: date,
+        allDay: true,
+        extendedProps: {
+            dayShift,
+            nightShift,
+            school,
+            off
+        }
+    };
+}
+
 // Parse the Google Sheets data into calendar events
-export function parseScheduleData(rows) {
+function parseScheduleData(rows) {
     const events = [];
     
-    rows.forEach((row, index) => {
+    if (!Array.isArray(rows)) {
+        console.error('Invalid data format received from Google Sheets');
+        return events;
+    }
+    
+    for (const row of rows) {
+        if (!row || row.length < 20) continue;
+        
         const dateValue = row[0];
-        if (!dateValue) return;
+        if (!dateValue) continue;
 
-        // Parse date
-        let date = parseDateValue(dateValue);
-        if (!date) return;
+        const date = parseDateValue(dateValue);
+        if (!date) continue;
 
         const dayShift = row[16] || '';
         const nightShift = row[17] || '';
@@ -50,15 +82,50 @@ export function parseScheduleData(rows) {
         if (event) {
             events.push(event);
         }
-    });
+    }
     
     return events;
 }
 
+function createEventFromData(date, dayShift, nightShift, school, off) {
+    let title = '';
+    if (dayShift) title += `Day Shift:\n${dayShift}\n`;
+    if (nightShift) title += `Night Shift:\n${nightShift}\n`;
+    if (school) title += `School:\n${school}\n`;
+    if (off) title += `Off:\n${off}`;
+    
+    if (!title) return null;
+    
+    return {
+        title: title.trim(),
+        start: date,
+        allDay: true,
+        extendedProps: {
+            dayShift,
+            nightShift,
+            school,
+            off
+        }
+    };
+}
+
 function parseDateValue(dateValue) {
-    if (dateValue instanceof Date) {
-        return dateValue;
+    // Try parsing various date formats
+    const formats = [
+        new Date(dateValue), // Try native parsing
+        new Date(dateValue.replace(/-/g, '/')), // Replace hyphens with slashes
+        new Date(dateValue.split('T')[0]) // Try removing time component
+    ];
+    
+    for (let date of formats) {
+        if (!isNaN(date.getTime())) {
+            return date.toISOString().split('T')[0];
+        }
     }
+    
+    console.error('Could not parse date:', dateValue);
+    return null;
+}
     
     if (typeof dateValue === 'string') {
         let date = new Date(dateValue);

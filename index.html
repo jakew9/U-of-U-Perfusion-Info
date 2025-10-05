@@ -5,10 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schedule Management App2</title>
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAAA">
-    <link href='https://cdn.jsdelivr.net/npm/    <script type="module" src="script.js"></script>
-    
-</body>lcalendar@5.11.0/main.min.css' rel='stylesheet' />
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.css' rel='stylesheet' />
     <link rel="stylesheet" href="style.css">
+    <script type="module" src="script.js"></script>
+    <script type="module">
+        import { 
+            showPage,
+            showSupervisorPage,
+            showManagePublished,
+            requestEditAccess,
+            requestManageAccess
+        } from './js/components/navigation.js';
+
+        // Make navigation functions available globally
+        window.showPage = showPage;
+        window.showSupervisorPage = showSupervisorPage;
+        window.showManagePublished = showManagePublished;
+        window.requestEditAccess = requestEditAccess;
+        window.requestManageAccess = requestManageAccess;
+    </script>
+    <script type="module" src="script.js"></script>
 </head>
 <body>
 
@@ -19,12 +35,12 @@
             <h1 class="welcome-title">U of U Perfusion</h1>
             <p class="welcome-subtitle">Schedule Management System</p>
             <div class="button-container">
-                <button class="nav-button" onclick="showPage('publishedSchedulePage')">Published Schedule</button>
-                <button class="nav-button" onclick="showPage('preferencesPage')">Preferences</button>
-                <button class="nav-button" onclick="showPage('importantDatesPage')">Important Dates</button>
+                <button class="nav-button" onclick="window.showPage('publishedSchedulePage')">Published Schedule</button>
+                <button class="nav-button" onclick="window.showPage('preferencesPage')">Preferences</button>
+                <button class="nav-button" onclick="window.showPage('importantDatesPage')">Important Dates</button>
             </div>
             <div class="supervisor-container">
-                <button class="nav-button supervisor-button" onclick="showSupervisorPage()">Supervisor Access</button>
+                <button class="nav-button supervisor-button" onclick="window.showSupervisorPage()">Supervisor Access</button>
             </div>
         </div>
     </div>
@@ -43,12 +59,12 @@
             <div class="menu-card">
                 <h3>Edit Calendar</h3>
                 <p>Edit shift assignments and publish changes</p>
-                <button class="menu-button edit-button" onclick="requestEditAccess()">Edit Schedule</button>
+                <button class="menu-button edit-button" onclick="showPage('supervisorEditPage')">Edit Schedule</button>
             </div>
             <div class="menu-card">
                 <h3>Manage Published</h3>
                 <p>View and delete published schedule versions</p>
-                <button class="menu-button edit-button" onclick="requestManageAccess()">Manage Published</button>
+                <button class="menu-button edit-button" onclick="showPage('managePublishedPage')">Manage Published</button>
             </div>
         </div>
     </div>

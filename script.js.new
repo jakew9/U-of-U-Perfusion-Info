@@ -2,57 +2,48 @@
 import { 
     showPage, 
     showSupervisorPage, 
-    showManagePublished,
-    requestEditAccess
+    showManagePublished
 } from './js/components/navigation.js';
-
-// Expose necessary functions to window
-window.showPage = showPage;
-window.showSupervisorPage = showSupervisorPage;
-window.showManagePublished = showManagePublished;
-window.requestEditAccess = requestEditAccess;
-
 import { 
     checkPassword, 
     closePasswordModal,
     openEditModal,
     closeEditModal,
-    saveEdit
+    saveEdit,
+    requestEditAccess,
+    requestManageAccess
 } from './js/components/modals.js';
-
 import {
     previewVersion,
     deleteVersion,
     confirmDeleteVersion,
+    displayPublishedVersions,
     clearAllVersions
 } from './js/components/versionManager.js';
-
-import { 
-    publishSchedule,
-    refreshScheduleFromSheets,
-    restartFromGoogleSheets 
-} from './js/storage/localStorageManager.js';
-
-// Make all necessary functions available globally
-Object.assign(window, {
-    showPage,
-    showSupervisorPage,
-    showManagePublished,
-    requestEditAccess,
-    requestManageAccess,
-    checkPassword,
-    closePasswordModal,
-    openEditModal,
-    closeEditModal,
-    saveEdit,
-    previewVersion,
-    deleteVersion,
-    confirmDeleteVersion,
-    clearAllVersions,
+import {
     publishSchedule,
     refreshScheduleFromSheets,
     restartFromGoogleSheets
-});
+} from './js/storage/localStorageManager.js';
+
+// Make functions available globally
+window.showPage = showPage;
+window.showSupervisorPage = showSupervisorPage;
+window.showManagePublished = showManagePublished;
+window.checkPassword = checkPassword;
+window.closePasswordModal = closePasswordModal;
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+window.saveEdit = saveEdit;
+window.requestEditAccess = requestEditAccess;
+window.requestManageAccess = requestManageAccess;
+window.previewVersion = previewVersion;
+window.deleteVersion = deleteVersion;
+window.confirmDeleteVersion = confirmDeleteVersion;
+window.clearAllVersions = clearAllVersions;
+window.publishSchedule = publishSchedule;
+window.refreshScheduleFromSheets = refreshScheduleFromSheets;
+window.restartFromGoogleSheets = restartFromGoogleSheets;
 
 // Initialize app when page loads
 document.addEventListener('DOMContentLoaded', () => {
