@@ -33,6 +33,17 @@ import {
     showManagePublished
 } from './js/components/navigation.js';
 
+// Make functions globally available
+window.showPage = showPage;
+window.showSupervisorPage = showSupervisorPage;
+window.showManagePublished = showManagePublished;
+window.checkPassword = checkPassword;
+window.closePasswordModal = closePasswordModal;
+window.previewVersion = previewVersion;
+window.deleteVersion = deleteVersion;
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+
 // Fetch schedule data from Google Sheets
 async function fetchScheduleFromGoogleSheets() {
     try {
