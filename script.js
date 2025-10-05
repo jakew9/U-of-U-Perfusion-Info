@@ -223,7 +223,7 @@ if (isWeekend) {
                 }
             });
         }
-    });
+    }
     
     return events;
 }
