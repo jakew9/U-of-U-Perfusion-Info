@@ -120,7 +120,6 @@ if (isNaN(date.getTime())) return;
         }
         
         // Parse date - handle different date formats
-let date;
 if (dateValue instanceof Date) {
     date = dateValue;
 } else if (typeof dateValue === 'string') {
