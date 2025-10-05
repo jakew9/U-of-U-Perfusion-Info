@@ -118,21 +118,6 @@ if (isNaN(date.getTime())) return;
         if (dateStr.includes('Sep 04') || dateStr.includes('Sep 17') || dateStr.includes('September 4') || dateStr.includes('September 17')) {
             console.log(`Debug ${dateStr}: dayShift="${dayShift}", nightShift="${nightShift}", cleanDayShift="${cleanDayShift}", cleanNightShift="${cleanNightShift}"`);
         }
-        
-        // Parse date - handle different date formats
-if (dateValue instanceof Date) {
-    date = dateValue;
-} else if (typeof dateValue === 'string') {
-    date = new Date(dateValue);
-    if (isNaN(date.getTime())) {
-        const parts = dateValue.split('/');
-        if (parts.length === 3) {
-            date = new Date(parts[2], parts[0] - 1, parts[1]);
-        }
-    }
-} else {
-    return;
-}
 
 if (isNaN(date.getTime())) return;
 
