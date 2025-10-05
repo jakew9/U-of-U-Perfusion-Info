@@ -1,13 +1,37 @@
-// Google Sheets API Configuration
-const API_KEY = 'AIzaSyCyCEmSvunsn8C82AwhSyX5joXy2hstPls';
-const SHEET_ID = '1pKNJK3nvpcwQor1obQm1V6qiWfwOPmImV361Qfqul8E';
-const RANGE = 'Sheet2!A13:X100';
-
-// Global variables
-let calendar, supervisorViewCalendar, supervisorEditCalendar, previousCalendar;
-let currentEditingDate = null;
-let currentPublishedVersion = 1;
-const SUPERVISOR_PASSWORD = "admin123";
+// Import all necessary modules
+import * as config from './js/config.js';
+import { fetchScheduleFromGoogleSheets } from './js/api/googleSheets.js';
+import { getTextColor, calculateEventColor } from './js/utils/colorUtils.js';
+import { 
+    initializeSupervisorViewCalendar,
+    initializeSupervisorEditCalendar,
+    initializePublishedCalendar,
+    initializePreviousCalendar
+} from './js/calendar/calendarInit.js';
+import {
+    loadPublishedEvents,
+    loadEventsForEditing,
+    savePublishedSchedule,
+    clearAllVersions
+} from './js/storage/localStorageManager.js';
+import {
+    showPasswordModal,
+    closePasswordModal,
+    checkPassword,
+    openEditModal,
+    closeEditModal
+} from './js/components/modals.js';
+import {
+    displayPublishedVersions,
+    createVersionItem,
+    previewVersion,
+    deleteVersion
+} from './js/components/versionManager.js';
+import {
+    showPage,
+    showSupervisorPage,
+    showManagePublished
+} from './js/components/navigation.js';
 
 // Fetch schedule data from Google Sheets
 async function fetchScheduleFromGoogleSheets() {
