@@ -211,7 +211,7 @@ if (isWeekend) {
     }
     
     return events;
-});
+}
 
 // Get appropriate text color based on background
 function getTextColor(backgroundColor) {
