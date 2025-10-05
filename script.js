@@ -122,9 +122,6 @@ if (isNaN(date.getTime())) return;
 // Format date for FullCalendar (YYYY-MM-DD)
 const formattedDate = date.toISOString().split('T')[0];
 
-// Check if it's a weekend - DECLARE ONLY ONCE HERE
-const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-
 // Create event title
 let title = '';
 if (isWeekend) {
