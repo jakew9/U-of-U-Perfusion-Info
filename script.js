@@ -1,83 +1,142 @@
-// Import all necessary modules
-import { 
-    showPage, 
-    showSupervisorPage, 
-    showManagePublished,
-    requestEditAccess
-} from './js/components/navigation.js';
+// Bootstrap function to initialize app; runs on DOMContentLoaded or immediately if DOM already loaded
+async function boot() {
+    try {
+        // Import all necessary modules
+        const navigationModule = await import('/js/components/navigation.js');
+        const {
+            showPage,
+            showSupervisorPage,
+            showManagePublished,
+            requestEditAccess
+        } = navigationModule;
 
-// Expose necessary functions to window
-window.showPage = showPage;
-window.showSupervisorPage = showSupervisorPage;
-window.showManagePublished = showManagePublished;
-window.requestEditAccess = requestEditAccess;
+        const modalsModule = await import('/js/components/modals.js');
+        const {
+            checkPassword,
+            closePasswordModal,
+            openEditModal,
+            closeEditModal,
+            saveEdit
+        } = modalsModule;
 
-import { 
-    checkPassword, 
-    closePasswordModal,
-    openEditModal,
-    closeEditModal,
-    saveEdit
-} from './js/components/modals.js';
+        const versionModule = await import('/js/components/versionManager.js');
+        const {
+            previewVersion,
+            deleteVersion,
+            confirmDeleteVersion,
+            clearAllVersions
+        } = versionModule;
 
-import {
-    previewVersion,
-    deleteVersion,
-    confirmDeleteVersion,
-    clearAllVersions
-} from './js/components/versionManager.js';
+        const storageModule = await import('/js/storage/localStorageManager.js');
+        const {
+            publishSchedule,
+            refreshScheduleFromSheets,
+            restartFromGoogleSheets
+        } = storageModule;
 
-import { 
-    publishSchedule,
-    refreshScheduleFromSheets,
-    restartFromGoogleSheets 
-} from './js/storage/localStorageManager.js';
+        // Import calendar state so we can read current edit calendar events when publishing
+        const { calendarState } = await import('/js/state/calendarState.js');
 
-// Make all necessary functions available globally
-Object.assign(window, {
-    showPage,
-    showSupervisorPage,
-    showManagePublished,
-    requestEditAccess,
-    requestManageAccess,
-    checkPassword,
-    closePasswordModal,
-    openEditModal,
-    closeEditModal,
-    saveEdit,
-    previewVersion,
-    deleteVersion,
-    confirmDeleteVersion,
-    clearAllVersions,
-    publishSchedule,
-    refreshScheduleFromSheets,
-    restartFromGoogleSheets
-});
+        // Wrapper: collect events from the Supervisor Edit calendar and publish them
+        async function publishCurrentSchedule() {
+            console.log('[Publish] Button clicked');
+            try {
+                const editCal = calendarState.supervisorEditCalendar;
+                if (!editCal) {
+                    console.warn('[Publish] Edit calendar not initialized');
+                    alert('Edit calendar is not initialized yet. Open the Edit Schedule page first.');
+                    return;
+                }
 
-// Initialize app when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    // Set up password input handler
-    const passwordInput = document.getElementById('passwordInput');
-    if (passwordInput) {
-        passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                checkPassword();
+                // Convert FullCalendar EventApi objects to plain objects for storage
+                const events = editCal.getEvents().map(e => ({
+                    title: e.title,
+                    start: e.startStr,
+                    end: e.endStr || undefined,
+                    backgroundColor: e.backgroundColor || undefined,
+                    extendedProps: { ...e.extendedProps }
+                }));
+
+                console.log('[Publish] Preparing to publish events count:', events.length);
+                const success = await publishSchedule(events);
+                if (success) {
+                    console.log('[Publish] Success, navigating to Published tab');
+                    // Navigate to the Published tab so the user sees the result
+                    showPage('publishedSchedulePage');
+                }
+            } catch (err) {
+                console.error('Failed to publish current schedule:', err);
+                alert('Failed to publish schedule. Please try again.');
             }
-        });
-    }
-    
-    // Set up modal click handlers
-    window.onclick = (event) => {
-        const passwordModal = document.getElementById('passwordModal');
-        const editModal = document.getElementById('editModal');
-        
-        if (event.target === passwordModal) {
-            closePasswordModal();
-        } else if (event.target === editModal) {
-            closeEditModal();
         }
-    };
-    
-    // Show initial page
-    showPage('welcomePage');
-});
+
+        // Expose all functions to window object
+        Object.assign(window, {
+            showPage,
+            showSupervisorPage,
+            showManagePublished,
+            requestEditAccess,
+            checkPassword,
+            closePasswordModal,
+            openEditModal,
+            closeEditModal,
+            saveEdit,
+            previewVersion,
+            deleteVersion,
+            confirmDeleteVersion,
+            clearAllVersions,
+            publishSchedule, // keep original available if needed
+            publishCurrentSchedule, // preferred UI entry point
+            refreshScheduleFromSheets,
+            restartFromGoogleSheets
+        });
+
+        // Fallback binding in case inline onclick is blocked or overridden
+        const publishBtn = document.getElementById('publishBtn');
+        if (publishBtn) {
+            publishBtn.addEventListener('click', (e) => {
+                // Prevent duplicate triggers if inline handler exists
+                if (!e.defaultPrevented) {
+                    e.preventDefault();
+                    window.publishCurrentSchedule();
+                }
+            });
+        }
+
+        // Set up password input handler
+        const passwordInput = document.getElementById('passwordInput');
+        if (passwordInput) {
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    checkPassword();
+                }
+            });
+        }
+
+        // Set up modal click handlers
+        window.onclick = (event) => {
+            const passwordModal = document.getElementById('passwordModal');
+            const editModal = document.getElementById('editModal');
+            
+            if (event.target === passwordModal) {
+                closePasswordModal();
+            } else if (event.target === editModal) {
+                closeEditModal();
+            }
+        };
+
+        // Show initial page
+        showPage('welcomePage');
+        
+        console.log('Application initialized successfully');
+    } catch (error) {
+        console.error('Error initializing application:', error);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+} else {
+    // Document already parsed, run immediately
+    boot();
+}

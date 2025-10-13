@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Schedule App</title>
+    <style>
+        body { background: lightgray; font-family: Arial; padding: 20px; }
+        .debug { background: white; padding: 10px; margin: 10px 0; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Debug Schedule App</h1>
+    <div class="debug" id="status">Loading...</div>
+    
+    <script type="module">
+        document.getElementById('status').textContent = 'JavaScript working!';
+        
+        try {
+            const configModule = await import('/js/config.js');
+            document.getElementById('status').textContent += ' Config loaded!';
+        } catch (error) {
+            document.getElementById('status').textContent = 'Error loading config: ' + error.message;
+            console.error('Config error:', error);
+        }
+        
+        try {
+            const navigationModule = await import('/js/components/navigation.js');
+            document.getElementById('status').textContent += ' Navigation loaded!';
+        } catch (error) {
+            document.getElementById('status').textContent += ' Error loading navigation: ' + error.message;
+            console.error('Navigation error:', error);
+        }
+    </script>
+</body>
+</html>

@@ -1,4 +1,6 @@
 import { currentPublishedVersion } from '../config.js';
+import { calendarState } from '../state/calendarState.js';
+import { fetchScheduleFromGoogleSheets as fetchFromAPI } from '../api/sheetsApi.js';
 
 // Local storage operations for schedule management
 export function savePublishedSchedule(events) {
@@ -24,7 +26,7 @@ export async function loadPublishedEvents() {
         return data.events || [];
     }
     
-    return await fetchScheduleFromGoogleSheets();
+    return await fetchFromAPI();
 }
 
 export async function loadEventsForEditing() {
@@ -34,7 +36,7 @@ export async function loadEventsForEditing() {
         return data.events || [];
     }
     
-    return await fetchScheduleFromGoogleSheets();
+    return await fetchFromAPI();
 }
 
 export function clearAllVersions() {
@@ -56,6 +58,22 @@ export function getVersionHistory() {
 
 export async function publishSchedule(events) {
     try {
+        // If no events provided, try to gather from the Supervisor Edit calendar
+        if (!events) {
+            const editCal = calendarState && calendarState.supervisorEditCalendar;
+            if (editCal) {
+                events = editCal.getEvents().map(e => ({
+                    title: e.title,
+                    start: e.startStr,
+                    end: e.endStr || undefined,
+                    backgroundColor: e.backgroundColor || undefined,
+                    extendedProps: { ...e.extendedProps }
+                }));
+            } else {
+                alert('No events to publish. Open the Edit Schedule page first.');
+                return false;
+            }
+        }
         if (savePublishedSchedule(events)) {
             alert('Schedule published successfully!');
             return true;
@@ -70,9 +88,11 @@ export async function publishSchedule(events) {
 
 export async function refreshScheduleFromSheets() {
     try {
-        const events = await fetchScheduleFromGoogleSheets();
+        console.log('Starting refresh from Google Sheets...'); // Debug logging
+        const events = await fetchFromAPI();
+        console.log('Fetched events:', events);
         if (events && events.length > 0) {
-            if (await savePublishedSchedule(events)) {
+            if (savePublishedSchedule(events)) {
                 alert('Schedule refreshed successfully from Google Sheets!');
                 return true;
             }
@@ -98,18 +118,5 @@ export async function restartFromGoogleSheets() {
             console.error('Error restarting from sheets:', error);
             alert('Error restarting from Google Sheets. Please try again.');
         }
-    }
-}
-
-import { fetchScheduleFromGoogleSheets as fetchFromAPI } from '../api/googleSheets.js';
-
-async function fetchScheduleFromGoogleSheets() {
-    try {
-        const events = await fetchFromAPI();
-        console.log('Fetched events:', events);
-        return events;
-    } catch (error) {
-        console.error('Error fetching from Google Sheets:', error);
-        return [];
     }
 }

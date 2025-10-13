@@ -7,6 +7,14 @@ import {
 import { displayPublishedVersions } from './versionManager.js';
 import { showPasswordModal } from './modals.js';
 
+export function showSupervisorPage() {
+    if (sessionStorage.getItem('isAuthenticated')) {
+        showPage('supervisorPage');
+    } else {
+        showPasswordModal('view');
+    }
+}
+
 // Page navigation functions
 export function showPage(pageId) {
     const pages = document.querySelectorAll('.page');
@@ -37,14 +45,6 @@ export function showPage(pageId) {
     }
 }
 
-export function showSupervisorPage() {
-    if (sessionStorage.getItem('isAuthenticated')) {
-        showPage('supervisorPage');
-    } else {
-        showPasswordModal('supervisor');
-    }
-}
-
 export function showManagePublished() {
     if (sessionStorage.getItem('isAuthenticated')) {
         showPage('managePublishedPage');
@@ -62,7 +62,6 @@ export function requestEditAccess() {
 }
 
 // Expose navigation functions to window
-window.showSupervisorPage = showSupervisorPage;
 
 export function requestManageAccess() {
     if (sessionStorage.getItem('isAuthenticated')) {

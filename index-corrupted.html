@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schedule Management App2</title>
+    <title>Schedule Management App2            <form class="edit-form" id="editForm">
+                <label for="extraShiftInput">+1 Extra Shift (optional):</label>
+                <input type="text" id="extraShiftInput" placeholder="JM/KL (leave empty if none)">
+                
+                <label for="dayShiftInput">Day Shift (use / to separate employees):</label>
+                <input type="text" id="dayShiftInput" placeholder="JM/KL/RT">
+                
+                <label for="nightShiftInput">Night Shift (use / to separate employees):</label>
+                <input type="text" id="nightShiftInput" placeholder="AS/BN/CD">\n                e>
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAAA">
     <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.css' rel='stylesheet' />
     <link rel="stylesheet" href="style.css">
@@ -66,7 +74,7 @@
             <h1 class="page-title">Supervisor - Edit Schedule</h1>
             <div class="header-buttons">
                 <button class="restart-button" onclick="restartFromGoogleSheets()">Restart from Google Sheets</button>
-                <button class="publish-button" id="publishBtn" onclick="window.publishCurrentSchedule()">Publish Schedule</button>
+                <button class="publish-button" onclick="publishSchedule()">Publish Schedule</button>
             </div>
         </div>
         <div class="supervisor-controls">
@@ -84,11 +92,11 @@
             <h1 class="page-title">Published Schedule</h1>
             <div class="last-updated" id="lastUpdated"></div>
         </div>
-        <div class="schedule-info" id="scheduleStats">
-            <!-- Schedule statistics will be populated here -->
-        </div>
+        <!-- Version Tabs Container -->
         <div class="version-tabs-container" id="versionTabsContainer">
-            <div class="version-tabs" id="versionTabs"></div>
+            <div class="version-tabs" id="versionTabs">
+                <!-- Version buttons will be dynamically added here -->
+            </div>
         </div>
         <div id='publishedCalendar'></div>
     </div>
@@ -98,11 +106,16 @@
             <button class="back-button" onclick="showPage('supervisorPage')">← Back</button>
             <h1 class="page-title">Manage Published Versions</h1>
         </div>
+        
         <div class="content-card">
             <div class="manage-published-section">
                 <h3>Published Schedule Versions</h3>
                 <p>View and manage all published schedule versions. You can delete old versions to free up storage space.</p>
-                <div id="publishedVersionsList" class="versions-list"></div>
+                
+                <div id="publishedVersionsList" class="versions-list">
+                    <!-- Version items will be dynamically added here -->
+                </div>
+                
                 <div class="manage-actions">
                     <button class="danger-button" onclick="clearAllVersions()" id="clearAllBtn" style="display: none;">
                         Clear All Old Versions
@@ -171,20 +184,11 @@
         <div class="edit-modal-content">
             <h3 id="editModalTitle">Edit Schedule for</h3>
             <form class="edit-form" id="editForm">
-                <label for="extraShiftInput">+1 Extra Shift (optional):</label>
-                <input type="text" id="extraShiftInput" placeholder="JM/KL (leave empty if none)">
-                
                 <label for="dayShiftInput">Day Shift (use / to separate employees):</label>
                 <input type="text" id="dayShiftInput" placeholder="JM/KL/RT">
                 
                 <label for="nightShiftInput">Night Shift (use / to separate employees):</label>
                 <input type="text" id="nightShiftInput" placeholder="AS/BN/CD">
-                
-                <label for="schoolInput">School:</label>
-                <input type="text" id="schoolInput" placeholder="TR">
-                        
-                <label for="offInput">Off:</label>
-                <input type="text" id="offInput" placeholder="GB">
                 
                 <label for="backgroundColorInput">Background Color:</label>
                 <div class="color-options">
@@ -226,6 +230,12 @@
                     </label>
                 </div>
                 
+                <label for="schoolInput">School:</label>
+                <input type="text" id="schoolInput" placeholder="TR">
+                        
+                <label for="offInput">Off:</label>
+                <input type="text" id="offInput" placeholder="GB">
+                
                 <div class="edit-form-buttons">
                     <button type="button" class="cancel-btn" onclick="closeEditModal()">Cancel</button>
                     <button type="button" class="save-btn" onclick="saveEdit()">Save</button>
@@ -239,4 +249,3 @@
     <script type="module" src="script.js"></script>
     
 </body>
-</html>

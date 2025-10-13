@@ -1,3 +1,9 @@
+/* Version tabs styling */
+.version-tabs-container { margin: 8px 0 12px; }
+.version-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.version-tab { padding: 6px 10px; border: 1px solid #ccc; background: #f8f8f8; border-radius: 6px; cursor: pointer; }
+.version-tab.active { background: #e0f2fe; border-color: #38bdf8; color: #0369a1; }
+.hidden { display: none; }
 /* Reset and Base Styles */
 * {
     margin: 0;
@@ -27,7 +33,6 @@ body {
     z-index: 1;
 }
 
-/* Fix for page switching conflicts */
 .page:not(.active) {
     display: none !important;
 }
@@ -361,22 +366,14 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* FullCalendar Event Text Improvements */
-.fc-event-title {
-    white-space: pre-line !important;
-    word-wrap: break-word !important;
-    overflow: hidden !important;
-    line-height: 1.2 !important;
-    font-size: 0.8rem !important;
-    font-weight: 500 !important;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3) !important;
-}
-
+/* FullCalendar Event Styles */
 .fc-daygrid-event {
     white-space: pre-line !important;
     cursor: pointer !important;
     transition: all 0.2s ease !important;
     min-height: 20px !important;
+    padding: 4px 6px !important;
+    font-size: 10px !important;
 }
 
 .fc-daygrid-event:hover {
@@ -391,23 +388,48 @@ body {
 
 .fc-event-main {
     padding: 2px 4px !important;
+    line-height: 1.4 !important;
 }
 
-/* Make calendar cells taller to accommodate more text */
+.fc-event-title {
+    white-space: pre-line !important;
+    word-wrap: break-word !important;
+    overflow: visible !important;
+    line-height: 1.4 !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3) !important;
+}
+
+.fc-event-title-container {
+    color: inherit !important;
+    white-space: pre-line !important;
+}
+
 .fc-daygrid-day-frame {
-    min-height: 80px !important;
+    min-height: 120px !important;
 }
 
 .fc-scrollgrid-sync-table {
     height: auto !important;
 }
 
-/* Improve text contrast */
-.fc-event-title-container {
-    color: inherit !important;
+/* Event colors */
+.fc .fc-daygrid-event:not([style*="background-color"]) {
+    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    color: #1f2937 !important;
 }
 
-/* Click hint for better UX */
+.fc .fc-daygrid-event:not([style*="background-color"]) .fc-event-main {
+    color: #1f2937 !important;
+}
+
+.fc .fc-daygrid-event[style*="background-color"] .fc-event-main {
+    color: #ffffff !important;
+}
+
+/* Click hint */
 .fc-daygrid-event::after {
     content: "📋 Click for details";
     position: absolute;
@@ -469,7 +491,7 @@ body {
 }
 
 /* Modal Styles */
-.password-modal, .edit-modal {
+.modal, .password-modal, .edit-modal {
     display: none;
     position: fixed;
     z-index: 1000;
@@ -479,15 +501,18 @@ body {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(5px);
+    overflow-y: auto;
 }
 
-.password-modal-content, .edit-modal-content {
+.modal-content, .password-modal-content, .edit-modal-content {
     background: white;
-    margin: 15% auto;
+    margin: 5% auto;
     padding: 2rem;
     border-radius: 15px;
     width: 90%;
     max-width: 500px;
+    max-height: 85vh;
+    overflow-y: auto;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     position: relative;
 }
@@ -585,9 +610,9 @@ body {
 
 .color-options {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.5rem;
-    margin-top: 0.5rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 10px 0;
 }
 
 .color-option {
@@ -824,7 +849,7 @@ body {
     }
     
     .password-modal-content, .edit-modal-content {
-        margin: 10% auto;
+        margin: 5% auto;
         padding: 1.5rem;
     }
 }
