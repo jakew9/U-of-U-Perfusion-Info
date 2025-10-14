@@ -1,6 +1,6 @@
 import { currentPublishedVersion } from '../config.js';
 import { calendarState } from '../state/calendarState.js';
-import { fetchScheduleFromGoogleSheets as fetchFromAPI } from '../api/sheetsApi.js';
+import { fetchScheduleFromGoogleSheets as fetchFromAPI } from '../api/sheetsapi.js';
 
 // Local storage operations for schedule management
 export function savePublishedSchedule(events) {
