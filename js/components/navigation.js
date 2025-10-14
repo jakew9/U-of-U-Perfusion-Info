@@ -17,25 +17,27 @@ export function showSupervisorPage() {
 
 // Page navigation functions
 export function showPage(pageId) {
-    // Import auth manager dynamically to avoid circular dependencies
-    import('../auth/authManager.js').then(({ authManager }) => {
-        // Check if user is logged in for protected pages
-        const protectedPages = ['publishedSchedulePage', 'supervisorViewPage', 'supervisorEditPage', 'managePublishedPage', 'preferencesPage', 'importantDatesPage'];
-        
-        if (protectedPages.includes(pageId) && !authManager.isLoggedIn()) {
+    // Check if user is logged in for protected pages
+    const protectedPages = ['publishedSchedulePage', 'supervisorViewPage', 'supervisorEditPage', 'managePublishedPage', 'preferencesPage', 'importantDatesPage'];
+    
+    if (protectedPages.includes(pageId)) {
+        // Check if auth manager is available and user is logged in
+        if (window.authManager && !window.authManager.isLoggedIn()) {
             // Redirect to login page if not authenticated
-            showPage('loginPage');
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => page.classList.remove('active'));
+            document.getElementById('loginPage').classList.add('active');
             return;
         }
-        
-        const pages = document.querySelectorAll('.page');
-        pages.forEach(page => page.classList.remove('active'));
-        
-        document.getElementById(pageId).classList.add('active');
-        
-        // Initialize specific page content
-        initializePageContent(pageId);
-    });
+    }
+    
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(page => page.classList.remove('active'));
+    
+    document.getElementById(pageId).classList.add('active');
+    
+    // Initialize specific page content
+    initializePageContent(pageId);
 }
 
 function initializePageContent(pageId) {

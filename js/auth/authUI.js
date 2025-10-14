@@ -1,5 +1,4 @@
 import { authManager } from '../auth/authManager.js';
-import { showPage } from './navigation.js';
 
 // Login Modal Functions
 export function showLoginModal() {
@@ -58,7 +57,7 @@ export async function attemptLogin() {
         updateUIForLoggedInUser();
         
         // Redirect to main schedule page
-        showPage('publishedSchedulePage');
+        window.showPage('publishedSchedulePage');
         
     } catch (error) {
         showLoginError(error.message);
@@ -109,7 +108,7 @@ export function logout() {
     if (confirm('Are you sure you want to log out?')) {
         authManager.logout();
         updateUIForLoggedOutUser();
-        showPage('loginPage');
+        window.showPage('loginPage');
     }
 }
 
@@ -188,7 +187,7 @@ function updateUIForLoggedInUser() {
     if (userInfo) {
         userInfo.innerHTML = `
             <span>Welcome, ${user.fullName || user.username}!</span>
-            <button class="logout-btn" onclick="logout()">Logout</button>
+            <button class="logout-btn" onclick="window.logout()">Logout</button>
         `;
         userInfo.style.display = 'block';
     }
@@ -231,8 +230,8 @@ function displayPendingRegistrations() {
                 <br>Requested: ${new Date(reg.createdAt).toLocaleDateString()}
             </div>
             <div class="registration-actions">
-                <button class="approve-btn" onclick="approveRegistration(${reg.id})">Approve</button>
-                <button class="reject-btn" onclick="rejectRegistration(${reg.id})">Reject</button>
+                <button class="approve-btn" onclick="window.approveRegistration(${reg.id})">Approve</button>
+                <button class="reject-btn" onclick="window.rejectRegistration(${reg.id})">Reject</button>
             </div>
         </div>
     `).join('');
@@ -252,7 +251,7 @@ function displayApprovedUsers() {
             </div>
             <div class="user-actions">
                 ${user.email !== 'jakeweston@gmail.com' ? 
-                    `<button class="delete-btn" onclick="deleteUser(${user.id})">Delete</button>` : 
+                    `<button class="delete-btn" onclick="window.deleteUser(${user.id})">Delete</button>` : 
                     '<span class="admin-label">Admin</span>'
                 }
             </div>
