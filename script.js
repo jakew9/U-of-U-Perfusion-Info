@@ -53,6 +53,8 @@ async function boot() {
             approveRegistration,
             rejectRegistration,
             deleteUser,
+            promoteToAdmin,
+            demoteFromAdmin,
             initializeAuth
         } = authUIModule;
 
@@ -121,6 +123,8 @@ async function boot() {
             approveRegistration,
             rejectRegistration,
             deleteUser,
+            promoteToAdmin,
+            demoteFromAdmin,
             authManager
         });
 

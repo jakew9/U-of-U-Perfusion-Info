@@ -208,6 +208,66 @@ export class AuthManager {
         users.splice(userIndex, 1);
         this.saveApprovedUsers(users);
     }
+
+    // Promote user to admin (admin only)
+    async promoteToAdmin(userId) {
+        if (!this.isAdmin()) {
+            throw new Error('Only administrators can promote users');
+        }
+
+        const users = this.getApprovedUsers();
+        const userIndex = users.findIndex(u => u.id === userId);
+        
+        if (userIndex === -1) {
+            throw new Error('User not found');
+        }
+
+        if (users[userIndex].role === 'admin') {
+            throw new Error('User is already an administrator');
+        }
+
+        users[userIndex].role = 'admin';
+        users[userIndex].promotedBy = this.currentUser.username;
+        users[userIndex].promotedAt = new Date().toISOString();
+
+        this.saveApprovedUsers(users);
+        return users[userIndex];
+    }
+
+    // Demote admin to regular user (admin only)
+    async demoteFromAdmin(userId) {
+        if (!this.isAdmin()) {
+            throw new Error('Only administrators can demote users');
+        }
+
+        const users = this.getApprovedUsers();
+        const userIndex = users.findIndex(u => u.id === userId);
+        
+        if (userIndex === -1) {
+            throw new Error('User not found');
+        }
+
+        // Prevent demoting yourself
+        if (users[userIndex].email === this.currentUser.email) {
+            throw new Error('You cannot demote your own account');
+        }
+
+        // Prevent demoting the original admin (jakeweston@gmail.com)
+        if (users[userIndex].email === 'jakeweston@gmail.com') {
+            throw new Error('Cannot demote the original administrator');
+        }
+
+        if (users[userIndex].role !== 'admin') {
+            throw new Error('User is not an administrator');
+        }
+
+        users[userIndex].role = 'user';
+        users[userIndex].demotedBy = this.currentUser.username;
+        users[userIndex].demotedAt = new Date().toISOString();
+
+        this.saveApprovedUsers(users);
+        return users[userIndex];
+    }
 }
 
 // Create global auth manager instance

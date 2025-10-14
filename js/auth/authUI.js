@@ -151,6 +151,36 @@ export async function deleteUser(userId) {
     }
 }
 
+// Promote user to admin
+export async function promoteToAdmin(userId) {
+    if (!confirm('Are you sure you want to make this user an administrator? They will have full access to manage the system.')) {
+        return;
+    }
+
+    try {
+        const user = await authManager.promoteToAdmin(userId);
+        alert(`${user.username} has been promoted to administrator successfully!`);
+        displayApprovedUsers();
+    } catch (error) {
+        alert('Error promoting user: ' + error.message);
+    }
+}
+
+// Demote admin to regular user
+export async function demoteFromAdmin(userId) {
+    if (!confirm('Are you sure you want to remove administrator privileges from this user?')) {
+        return;
+    }
+
+    try {
+        const user = await authManager.demoteFromAdmin(userId);
+        alert(`${user.username} has been demoted to regular user.`);
+        displayApprovedUsers();
+    } catch (error) {
+        alert('Error demoting user: ' + error.message);
+    }
+}
+
 // UI Helper Functions
 function showLoginError(message) {
     const errorDiv = document.getElementById('loginError');
@@ -240,23 +270,60 @@ function displayPendingRegistrations() {
 function displayApprovedUsers() {
     const container = document.getElementById('approvedUsersList');
     const users = authManager.getApprovedUsers();
+    const currentUser = authManager.getCurrentUser();
     
-    container.innerHTML = users.map(user => `
-        <div class="user-item">
-            <div class="user-info">
-                <strong>${user.fullName || user.username}</strong> (${user.username})
-                <br>Email: ${user.email}
-                <br>Role: ${user.role}
-                <br>Approved: ${new Date(user.approvedAt || user.createdAt).toLocaleDateString()}
+    container.innerHTML = users.map(user => {
+        const isOriginalAdmin = user.email === 'jakeweston@gmail.com';
+        const isCurrentUser = user.email === currentUser.email;
+        const isAdmin = user.role === 'admin';
+        
+        let roleDisplay = user.role;
+        if (user.promotedBy && user.promotedAt) {
+            roleDisplay += ` (promoted by ${user.promotedBy} on ${new Date(user.promotedAt).toLocaleDateString()})`;
+        } else if (user.demotedBy && user.demotedAt) {
+            roleDisplay += ` (demoted by ${user.demotedBy} on ${new Date(user.demotedAt).toLocaleDateString()})`;
+        }
+        
+        return `
+            <div class="user-item ${isAdmin ? 'admin-user' : ''}">
+                <div class="user-info">
+                    <strong>${user.fullName || user.username}</strong> (${user.username})
+                    ${isOriginalAdmin ? '<span class="original-admin-badge">Original Admin</span>' : ''}
+                    <br>Email: ${user.email}
+                    <br>Role: <span class="role-${user.role}">${roleDisplay}</span>
+                    <br>Approved: ${new Date(user.approvedAt || user.createdAt).toLocaleDateString()}
+                </div>
+                <div class="user-actions">
+                    ${generateUserActionButtons(user, isOriginalAdmin, isCurrentUser, isAdmin)}
+                </div>
             </div>
-            <div class="user-actions">
-                ${user.email !== 'jakeweston@gmail.com' ? 
-                    `<button class="delete-btn" onclick="window.deleteUser(${user.id})">Delete</button>` : 
-                    '<span class="admin-label">Admin</span>'
-                }
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
+}
+
+function generateUserActionButtons(user, isOriginalAdmin, isCurrentUser, isAdmin) {
+    if (isOriginalAdmin) {
+        return '<span class="admin-label">Original Admin</span>';
+    }
+    
+    if (isCurrentUser) {
+        return '<span class="current-user-label">You</span>';
+    }
+    
+    let buttons = [];
+    
+    if (isAdmin) {
+        // User is admin - show demote button
+        buttons.push(`<button class="demote-btn" onclick="window.demoteFromAdmin(${user.id})">Remove Admin</button>`);
+    } else {
+        // User is regular user - show promote button
+        buttons.push(`<button class="promote-btn" onclick="window.promoteToAdmin(${user.id})">Make Admin</button>`);
+    }
+    
+    // Always show delete button for non-original admin users
+    buttons.push(`<button class="delete-btn" onclick="window.deleteUser(${user.id})">Delete</button>`);
+    
+    return buttons.join('');
 }
 
 // Initialize authentication on page load
