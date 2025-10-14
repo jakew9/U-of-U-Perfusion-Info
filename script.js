@@ -125,8 +125,8 @@ async function boot() {
             }
         };
 
-        // Show initial page
-        showPage('welcomePage');
+        // Show initial page - now defaults to published schedule
+        showPage('publishedSchedulePage');
         
         console.log('Application initialized successfully');
     } catch (error) {

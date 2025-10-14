@@ -107,12 +107,16 @@ export async function refreshScheduleFromSheets() {
 }
 
 export async function restartFromGoogleSheets() {
-    if (confirm('This will clear all saved versions and reload data from Google Sheets. Continue?')) {
+    if (confirm('This will create a new version from Google Sheets data, preserving your existing versions. Continue?')) {
         try {
-            clearAllVersions();
             const success = await refreshScheduleFromSheets();
             if (success) {
-                window.location.reload();
+                // Navigate to published page to show the new version
+                if (window.showPage) {
+                    window.showPage('publishedSchedulePage');
+                } else {
+                    window.location.reload();
+                }
             }
         } catch (error) {
             console.error('Error restarting from sheets:', error);

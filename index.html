@@ -11,7 +11,7 @@
 </head>
 <body>
 
-    <div id="welcomePage" class="page active">
+    <div id="welcomePage" class="page">
         <div class="welcome-container">
             <div class="floating-element floating-1">U</div>
             <div class="floating-element floating-2">U</div>
@@ -30,7 +30,7 @@
 
     <div id="supervisorPage" class="page">
         <div class="page-header">
-            <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
+            <button class="back-button" onclick="showPage('publishedSchedulePage')">← Back to Schedule</button>
             <h1 class="page-title">Supervisor Menu</h1>
         </div>
         <div class="supervisor-menu">
@@ -78,10 +78,9 @@
         <div id='supervisorEditCalendar'></div>
     </div>
 
-    <div id="publishedSchedulePage" class="page">
+    <div id="publishedSchedulePage" class="page active">
         <div class="page-header">
-            <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
-            <h1 class="page-title">Published Schedule</h1>
+            <h1 class="page-title">U of U Perfusion Schedule</h1>
             <div class="last-updated" id="lastUpdated"></div>
         </div>
         <div class="schedule-info" id="scheduleStats">
@@ -91,6 +90,18 @@
             <div class="version-tabs" id="versionTabs"></div>
         </div>
         <div id='publishedCalendar'></div>
+        
+        <!-- Navigation menu at bottom -->
+        <div class="bottom-navigation">
+            <div class="nav-menu-container">
+                <h3>Additional Options</h3>
+                <div class="bottom-nav-buttons">
+                    <button class="nav-button" onclick="window.showPage('preferencesPage')">Preferences</button>
+                    <button class="nav-button" onclick="window.showPage('importantDatesPage')">Important Dates</button>
+                    <button class="nav-button supervisor-button" onclick="window.showSupervisorPage()">Supervisor Access</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="managePublishedPage" class="page">
@@ -114,7 +125,7 @@
 
     <div id="preferencesPage" class="page">
         <div class="page-header">
-            <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
+            <button class="back-button" onclick="showPage('publishedSchedulePage')">← Back to Schedule</button>
             <h1 class="page-title">Preferences</h1>
         </div>
         <div class="content-card">
@@ -135,7 +146,7 @@
 
     <div id="importantDatesPage" class="page">
         <div class="page-header">
-            <button class="back-button" onclick="showPage('welcomePage')">← Back</button>
+            <button class="back-button" onclick="showPage('publishedSchedulePage')">← Back to Schedule</button>
             <h1 class="page-title">Important Dates</h1>
         </div>
         <div class="content-card">
