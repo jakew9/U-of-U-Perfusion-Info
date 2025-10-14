@@ -37,6 +37,25 @@ async function boot() {
         // Import calendar state so we can read current edit calendar events when publishing
         const { calendarState } = await import('./js/state/calendarState.js');
 
+        // Import authentication modules
+        const { authManager } = await import('./js/auth/authManager.js');
+        const authUIModule = await import('./js/auth/authUI.js');
+        const {
+            showLoginModal,
+            closeLoginModal,
+            showRegisterModal,
+            closeRegisterModal,
+            showUserManagementModal,
+            closeUserManagementModal,
+            attemptLogin,
+            attemptRegister,
+            logout,
+            approveRegistration,
+            rejectRegistration,
+            deleteUser,
+            initializeAuth
+        } = authUIModule;
+
         // Wrapper: collect events from the Supervisor Edit calendar and publish them
         async function publishCurrentSchedule() {
             console.log('[Publish] Button clicked');
@@ -88,7 +107,21 @@ async function boot() {
             publishSchedule, // keep original available if needed
             publishCurrentSchedule, // preferred UI entry point
             refreshScheduleFromSheets,
-            restartFromGoogleSheets
+            restartFromGoogleSheets,
+            // Auth functions
+            showLoginModal,
+            closeLoginModal,
+            showRegisterModal,
+            closeRegisterModal,
+            showUserManagementModal,
+            closeUserManagementModal,
+            attemptLogin,
+            attemptRegister,
+            logout,
+            approveRegistration,
+            rejectRegistration,
+            deleteUser,
+            authManager
         });
 
         // Fallback binding in case inline onclick is blocked or overridden
@@ -125,8 +158,13 @@ async function boot() {
             }
         };
 
-        // Show initial page - now defaults to published schedule
-        showPage('publishedSchedulePage');
+        // Initialize authentication and show appropriate page
+        const isLoggedIn = initializeAuth();
+        if (isLoggedIn) {
+            showPage('publishedSchedulePage');
+        } else {
+            showPage('loginPage');
+        }
         
         console.log('Application initialized successfully');
     } catch (error) {
