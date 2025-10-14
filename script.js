@@ -2,7 +2,7 @@
 async function boot() {
     try {
         // Import all necessary modules
-        const navigationModule = await import('/js/components/navigation.js');
+        const navigationModule = await import('./js/components/navigation.js');
         const {
             showPage,
             showSupervisorPage,
@@ -10,7 +10,7 @@ async function boot() {
             requestEditAccess
         } = navigationModule;
 
-        const modalsModule = await import('/js/components/modals.js');
+        const modalsModule = await import('./js/components/modals.js');
         const {
             checkPassword,
             closePasswordModal,
@@ -19,7 +19,7 @@ async function boot() {
             saveEdit
         } = modalsModule;
 
-        const versionModule = await import('/js/components/versionManager.js');
+        const versionModule = await import('./js/components/versionManager.js');
         const {
             previewVersion,
             deleteVersion,
@@ -27,7 +27,7 @@ async function boot() {
             clearAllVersions
         } = versionModule;
 
-        const storageModule = await import('/js/storage/localStorageManager.js');
+        const storageModule = await import('./js/storage/localStorageManager.js');
         const {
             publishSchedule,
             refreshScheduleFromSheets,
@@ -35,7 +35,7 @@ async function boot() {
         } = storageModule;
 
         // Import calendar state so we can read current edit calendar events when publishing
-        const { calendarState } = await import('/js/state/calendarState.js');
+        const { calendarState } = await import('./js/state/calendarState.js');
 
         // Wrapper: collect events from the Supervisor Edit calendar and publish them
         async function publishCurrentSchedule() {
