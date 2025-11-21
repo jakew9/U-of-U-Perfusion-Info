@@ -12,9 +12,6 @@ async function boot() {
          // ADD THIS NEW IMPORT
         const configModule = await import('./js/config.js');
         const { openGoogleSheet } = configModule;
-
-        const modalsModule = await import('./js/components/modals.js');
-        // ... rest of your imports
         const modalsModule = await import('./js/components/modals.js');
         const {
             checkPassword,
