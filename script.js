@@ -112,7 +112,7 @@ async function boot() {
             publishCurrentSchedule, // preferred UI entry point
             refreshScheduleFromSheets,
             restartFromGoogleSheets,
-            openGoogleSheet
+            openGoogleSheet,
             // Auth functions
             showLoginModal,
             closeLoginModal,
