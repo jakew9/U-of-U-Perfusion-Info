@@ -9,7 +9,12 @@ async function boot() {
             showManagePublished,
             requestEditAccess
         } = navigationModule;
+         // ADD THIS NEW IMPORT
+        const configModule = await import('./js/config.js');
+        const { openGoogleSheet } = configModule;
 
+        const modalsModule = await import('./js/components/modals.js');
+        // ... rest of your imports
         const modalsModule = await import('./js/components/modals.js');
         const {
             checkPassword,
@@ -110,6 +115,7 @@ async function boot() {
             publishCurrentSchedule, // preferred UI entry point
             refreshScheduleFromSheets,
             restartFromGoogleSheets,
+            openGoogleSheet
             // Auth functions
             showLoginModal,
             closeLoginModal,

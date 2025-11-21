@@ -11,3 +11,9 @@ export let supervisorEditCalendar = null;
 export let previousCalendar = null;
 export let currentEditingDate = null;
 export let currentPublishedVersion = 1;
+
+// Function to open Google Sheets
+export function openGoogleSheet() {
+    const sheetUrl = `https://docs.google.com/spreadsheets/d/${1pKNJK3nvpcwQor1obQm1V6qiWfwOPmImV361Qfqul8E}/edit`;
+    window.open(sheetUrl, '_blank');
+}
